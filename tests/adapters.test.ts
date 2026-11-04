@@ -4,7 +4,7 @@ import {generateKeyPairSync} from 'node:crypto';
 import ssh2 from 'ssh2';
 import http from 'node:http';
 import net from 'node:net';
-import {adapterRequest,createInstallPlan,probeSsh,runInstallation,shellQuote} from '../server/adapters.js';
+import {adapterRequest,createInstallPlan,inspectExistingServer,probeSsh,runInstallation,runSshPython,shellQuote} from '../server/adapters.js';
 const {Server} = ssh2;
 
 test('shell quoting keeps apostrophes, substitutions and newlines inside one literal',()=>{
@@ -38,6 +38,31 @@ test('Paper installer rejects compromised artifact hosts and missing checksum',a
   globalThis.fetch=(async()=>new Response(JSON.stringify([{channel:'STABLE',downloads:{'server:default':{url:'https://evil.example/paper.jar',checksums:{sha256:'a'.repeat(64)}}}}]),{status:200})) as typeof fetch;
   try { await assert.rejects(createInstallPlan({game:'minecraft',edition:'paper',version:'1.21.4',eulaAccepted:true}),/adresi/); }
   finally {globalThis.fetch=original;}
+});
+test('NeoForge selects only matching stable loader, verifies official SHA512 and starts using installed argfiles',async()=>{
+  const original=globalThis.fetch;
+  const requested:string[]=[];
+  globalThis.fetch=(async(input)=>{
+    const url=String(input);requested.push(url);
+    if(url.endsWith('maven-metadata.xml'))return new Response('<metadata><version>21.1.99</version><version>21.1.209</version><version>21.1.999-beta</version><version>21.4.999</version></metadata>');
+    if(url.endsWith('.sha512'))return new Response('b'.repeat(128));
+    throw new Error('Unexpected URL');
+  }) as typeof fetch;
+  try{
+    const plan=await createInstallPlan({game:'minecraft',edition:'neoforge',version:'1.21.1',eulaAccepted:true});
+    assert.equal(plan.loaderVersion,'21.1.209');assert.equal(plan.artifact?.algorithm,'sha512');
+    assert.match(plan.steps[2].command,/sha512sum --check/);
+    assert.match(plan.steps[3].command,/java -jar installer.jar --installServer/);
+    assert.match(plan.steps[4].command,/@libraries\/net\/neoforged\/neoforge\/21\.1\.209\/unix_args\.txt/);
+    assert.equal(requested.length,2);
+    await assert.rejects(createInstallPlan({game:'minecraft',edition:'neoforge',version:'1.20.1',eulaAccepted:true}),/kararlı/);
+  }finally{globalThis.fetch=original;}
+});
+test('NeoForge installer refuses missing official checksum',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=(async(input)=>new Response(String(input).endsWith('maven-metadata.xml')?'<version>21.1.209</version>':'not-a-checksum')) as typeof fetch;
+  try{await assert.rejects(createInstallPlan({game:'minecraft',edition:'neoforge',version:'1.21.1',eulaAccepted:true}),/SHA512/);}
+  finally{globalThis.fetch=original;}
 });
 test('bridge refuses missing credentials, unsafe paths and cleartext remote HTTP',async()=>{
   await assert.rejects(adapterRequest({},'/state'),/köprüsü/);
@@ -95,4 +120,27 @@ test('live requests use the SSH loopback tunnel, preserve inventory queries and 
     await new Promise<void>(resolve=>server.close(()=>resolve()));
     await new Promise<void>(resolve=>bridge.close(()=>resolve()));
   }
+});
+test('SSH Python input travels only through stdin and inspection never starts an installer',async()=>{
+  const {privateKey}=generateKeyPairSync('rsa',{modulusLength:2048});
+  const commands:string[]=[];const inputs:any[]=[];
+  const server=new Server({hostKeys:[privateKey.export({format:'pem',type:'pkcs1'}).toString()]},client=>{
+    client.on('error',()=>{});client.on('authentication',ctx=>ctx.accept());
+    client.on('ready',()=>client.on('session',accept=>accept().on('exec',(acceptCommand,_reject,info)=>{
+      commands.push(info.command);const stream=acceptCommand();let input='';
+      stream.on('data',(block:Buffer)=>{input+=block.toString();});
+      stream.on('end',()=>{inputs.push(JSON.parse(input));stream.write(JSON.stringify({candidates:[{directory:'/home/ssp/game',port:25565,status:'running',playersOnline:3}],machine:{ramGb:16},warnings:[]}));stream.exit(0);stream.end();});
+    })));
+  });
+  await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const config={host:'127.0.0.1',port:(server.address() as net.AddressInfo).port,username:'ssp',password:'secret'};
+  try{
+    const key=await probeSsh(config);const pinned={...config,hostFingerprint:key.fingerprint};
+    await runSshPython(pinned,'import json,sys\nprint(json.dumps({}))',{apiKey:'PRIVATE_API_KEY'});
+    const report=await inspectExistingServer(pinned,{directory:'/home/ssp/game'});
+    assert.equal(inputs[0].apiKey,'PRIVATE_API_KEY');assert.equal(inputs[1].directory,'/home/ssp/game');
+    assert.equal(report.address,'127.0.0.1:25565');assert.equal(report.playersOnline,3);
+    assert.ok(commands.every(command=>command.startsWith('python3 -c ')));
+    assert.ok(commands.every(command=>!command.includes('PRIVATE_API_KEY')&&!command.includes('--installServer')));
+  }finally{await new Promise<void>(resolve=>server.close(()=>resolve()));}
 });

@@ -16,9 +16,9 @@ export interface InstallOptions {
 export interface InstallPlan {
   supported: boolean; mode: 'auto' | 'manual'; game: string; edition: string; version: string;
   directory: string; steps: Array<{ label: string; command: string }>;
-  notes: string[]; artifact?: { url: string; algorithm?: string; hash?: string };
+  notes: string[]; artifact?: { url: string; algorithm?: string; hash?: string }; loaderVersion?:string;
 }
-const USER_AGENT = 'StylishServersPanel_SSP/0.1 (https://github.com/OpenMTLLC/StylishServersPanel_SSP)';
+const USER_AGENT = 'StylishServersPanel_SSP/0.2 (https://github.com/OpenMTLLC/StylishServersPanel_SSP)';
 const {Client} = ssh2;
 export function shellQuote(value: string): string { return "'" + value.replace(/'/g, "'\\''") + "'"; }
 function safeName(value: string, label: string): string {
@@ -73,10 +73,65 @@ export async function probeSsh(config: SshConfig) {
     return {fingerprint: connection.observed, verified: connection.verified, platform};
   } finally { connection.client.end(); }
 }
+/** Fixed trusted Python source on the command channel; secrets/input only on stdin. */
+export async function runSshPython(config:SshConfig, script:string, input:unknown, timeoutMs=90000):Promise<any> {
+  if (typeof script !== 'string' || script.length > 512*1024) throw new Error('Keşif betiği geçersiz.');
+  const payload=Buffer.from(JSON.stringify(input));
+  if (payload.length > 1024*1024) throw new Error('SSH işlem girdisi çok büyük.');
+  const connection=await ssh(config);
+  try {
+    return await new Promise((resolve,reject)=>{
+      const chunks:Buffer[]=[];let size=0;let settled=false;
+      const finish=(error?:Error,value?:unknown)=>{if(settled)return;settled=true;clearTimeout(timer);error?reject(error):resolve(value);};
+      const timer=setTimeout(()=>{connection.client.end();finish(new Error('SSH keşif işlemi zaman aşımına uğradı.'));},Math.min(Math.max(timeoutMs,1000),600000));
+      connection.client.exec(`python3 -c ${shellQuote(script)}`,(error,stream)=>{
+        if(error)return finish(new Error('SSH Python işlemi başlatılamadı.'));
+        stream.on('data',(chunk:Buffer)=>{size+=chunk.length;if(size>8*1024*1024){stream.close();finish(new Error('SSH yanıtı çok büyük.'));}else chunks.push(Buffer.from(chunk));});
+        stream.stderr.on('data',()=>{});
+        stream.once('error',()=>finish(new Error('SSH keşif akışı kesildi.')));
+        stream.once('close',(code:number|null)=>{
+          if(code!==0)return finish(new Error('SSH Python işlemi tamamlanamadı. Uzak dizin izinlerini ve Python kurulumunu kontrol edin.'));
+          try{finish(undefined,JSON.parse(Buffer.concat(chunks,size).toString('utf8')));}catch{finish(new Error('SSH işlemi geçerli JSON döndürmedi.'));}
+        });
+        stream.end(payload);
+      });
+    });
+  } finally {connection.client.end();}
+}
+export async function inspectExistingServer(config:SshConfig,options:{directory?:string;port?:number}={}) {
+  if(options.directory!==undefined && (typeof options.directory!=='string'||options.directory.length>4096||!options.directory.startsWith('/')||/[\0\r\n]/.test(options.directory)))throw new Error('Sunucu dizini mutlak bir Linux yolu olmalıdır.');
+  if(options.port!==undefined && (!Number.isInteger(options.port)||options.port<1||options.port>65535))throw new Error('Sunucu portu geçersiz.');
+  const source=await readFile(resolvePath(process.cwd(),'bridge','discover.py'),'utf8');
+  const script=`${source}\n_ssp_input=json.load(sys.stdin)\nprint(json.dumps(discover(_ssp_input),ensure_ascii=False))\n`;
+  // __name__ prevents the standalone CLI from running before stdin has been read.
+  const result=await runSshPython(config,`__name__='ssp_discovery'\n${script}`,options);
+  if(result?.error)throw new Error('Uzak sunucu keşfi tamamlanamadı. Dizin izinlerini ve Python kurulumunu kontrol edin.');
+  for(const candidate of result.candidates||[])candidate.address=`${config.host}:${candidate.port}`;
+  const selected=options.directory ? result.candidates?.[0] : result.candidates?.length===1 ? result.candidates[0] : null;
+  return {...(selected||{}),...result};
+}
 async function getJson(url: string): Promise<any> {
   const response = await fetch(url, {headers:{'User-Agent':USER_AGENT}, signal:AbortSignal.timeout(20000), redirect:'error'});
   if (!response.ok) throw new Error(`Resmî indirme servisi yanıt vermedi (${response.status}).`);
   return response.json();
+}
+async function getText(url:string):Promise<string>{
+  const response=await fetch(url,{headers:{'User-Agent':USER_AGENT},signal:AbortSignal.timeout(20000),redirect:'error'});
+  if(!response.ok)throw new Error(`Resmî NeoForge servisi yanıt vermedi (${response.status}).`);
+  const value=await response.text();if(value.length>2*1024*1024)throw new Error('NeoForge metadata yanıtı çok büyük.');return value;
+}
+export async function resolveNeoForgeVersion(gameVersion:string){
+  if(!/^(?:1\.\d+(?:\.\d+)?|26\.\d+(?:\.\d+)?)$/.test(gameVersion))throw new Error('NeoForge Minecraft sürümü geçersiz.');
+  const parts=gameVersion.split('.');
+  const prefix=parts[0]==='1'?`${parts[1]}.${parts[2]||'0'}.`:`${parts[0]}.${parts[1]}.${parts[2]||'0'}.`;
+  const metadata=await getText('https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml');
+  const versions=[...metadata.matchAll(/<version>([^<]+)<\/version>/g)].map(match=>match[1]).filter(value=>value.startsWith(prefix)&&/^\d+(?:\.\d+){2,3}$/.test(value));
+  versions.sort((a,b)=>{const av=a.split('.').map(Number),bv=b.split('.').map(Number);for(let i=0;i<Math.max(av.length,bv.length);i++){const d=(bv[i]||0)-(av[i]||0);if(d)return d;}return 0;});
+  if(!versions.length)throw new Error('Seçilen Minecraft sürümü için kararlı NeoForge dağıtımı bulunamadı.');
+  const loaderVersion=versions[0];const url=`https://maven.neoforged.net/releases/net/neoforged/neoforge/${loaderVersion}/neoforge-${loaderVersion}-installer.jar`;
+  const hash=(await getText(url+'.sha512')).trim().split(/\s+/)[0];
+  if(!/^[a-fA-F0-9]{128}$/.test(hash))throw new Error('NeoForge resmî SHA512 özeti geçersiz.');
+  return {loaderVersion,url,hash:hash.toLowerCase()};
 }
 function checkedUrl(value: string, domains: string[]): string {
   const url = new URL(value);
@@ -88,13 +143,17 @@ export async function createInstallPlan(options: InstallOptions): Promise<Instal
   const version = safeName(options.version || '1.21.4', 'Oyun sürümü'); const id = safeName(options.id || 'server', 'Sunucu kimliği');
   const directory = `ssp-servers/${id}`;
   const plan: InstallPlan = {supported:false, mode:options.installMode === 'manual' ? 'manual' : 'auto',game,edition,version,directory,steps:[],notes:[]};
-  if (game !== 'minecraft' || !['paper','fabric','vanilla'].includes(edition)) {
+  if (game !== 'minecraft' || !['paper','fabric','vanilla','neoforge'].includes(edition)) {
     plan.mode = 'manual'; plan.notes.push('Bu oyun/sürüm için otomatik kurulum henüz desteklenmiyor. Resmî sunucu dağıtımını SSH ile yükleyin; çalışan sunucuyu SSP köprüsüne bağlayın.');
     return plan;
   }
   if (!options.eulaAccepted) throw new Error('Minecraft kurulumu için EULA açıkça kabul edilmelidir: https://www.minecraft.net/eula');
   let artifact: InstallPlan['artifact'];
-  if (edition === 'paper') {
+  if(edition==='neoforge'){
+    const neo=await resolveNeoForgeVersion(version);
+    plan.loaderVersion=neo.loaderVersion;artifact={url:neo.url,algorithm:'sha512',hash:neo.hash};
+    plan.notes.push(`NeoForge ${neo.loaderVersion}; resmî installer --installServer ile kurulur. Minecraft ve NeoForge sürümleri eşleştirildi.`);
+  } else if (edition === 'paper') {
     const builds = await getJson(`https://fill.papermc.io/v3/projects/paper/versions/${encodeURIComponent(version)}/builds`);
     const build = Array.isArray(builds) ? builds.find((x:any) => x.channel === 'STABLE' && x.downloads?.['server:default']) : null;
     if (!build) throw new Error('Seçilen Paper sürümünün kararlı derlemesi bulunamadı. Başka bir sürüm seçin.');
@@ -122,11 +181,15 @@ export async function createInstallPlan(options: InstallOptions): Promise<Instal
   const memory = options.memoryMb ?? 2048;
   if (!Number.isInteger(memory) || memory < 512 || memory > 65536) throw new Error('Bellek miktarı geçersiz.');
   const cd = `cd "$HOME"/${shellQuote(directory)}`;
-  const startScript = `#!/bin/sh\nset -eu\ncd "$(dirname "$0")"\nexec java -Xms512M -Xmx${memory}M -jar server.jar nogui\n`;
+  const startScript = edition==='neoforge'
+    ? `#!/bin/sh\nset -eu\ncd "$(dirname "$0")"\nexec java @user_jvm_args.txt @libraries/net/neoforged/neoforge/${plan.loaderVersion}/unix_args.txt nogui\n`
+    : `#!/bin/sh\nset -eu\ncd "$(dirname "$0")"\nexec java -Xms512M -Xmx${memory}M -jar server.jar nogui\n`;
+  const artifactName=edition==='neoforge'?'installer.jar':'server.jar';
   plan.steps = [
     {label:'Gereksinimleri kontrol et',command:`set -eu\ncommand -v curl >/dev/null\ncommand -v python3 >/dev/null\ncommand -v java >/dev/null\nJAVA_VERSION=$(java -version 2>&1 | head -n 1 | sed -E 's/.*version "([0-9]+).*/\\1/')\n[ "$JAVA_VERSION" -ge ${requiredJava} ] || { echo 'Java ${requiredJava}+ gerekli'; exit 1; }`},
     {label:'Yeni sunucu dizinini oluştur',command:`set -eu\numask 077\nmkdir -p "$HOME"/ssp-servers\nmkdir "$HOME"/${shellQuote(directory)}`},
-    {label:'Doğrulanmış sunucu dosyasını indir',command:`set -eu\n${cd}\ncurl --fail --location --proto '=https' --tlsv1.2 --max-time 180 --user-agent ${shellQuote(USER_AGENT)} --output server.jar.part ${shellQuote(artifact.url)}\n${artifact.hash ? `printf '%s  %s\\n' ${shellQuote(artifact.hash)} 'server.jar.part' | ${artifact.algorithm}sum --check --status\n` : ''}mv server.jar.part server.jar`},
+    {label:'Doğrulanmış sunucu dosyasını indir',command:`set -eu\n${cd}\ncurl --fail --location --proto '=https' --tlsv1.2 --max-time 180 --user-agent ${shellQuote(USER_AGENT)} --output ${artifactName}.part ${shellQuote(artifact.url)}\n${artifact.hash ? `printf '%s  %s\\n' ${shellQuote(artifact.hash)} '${artifactName}.part' | ${artifact.algorithm}sum --check --status\n` : ''}mv ${artifactName}.part ${artifactName}`},
+    ...(edition==='neoforge'?[{label:'NeoForge sunucu kütüphanelerini kur',command:`set -eu\n${cd}\njava -jar installer.jar --installServer\ntest -f ${shellQuote(`libraries/net/neoforged/neoforge/${plan.loaderVersion}/unix_args.txt`)}\nprintf '%s\\n' '-Xms512M' '-Xmx${memory}M' > user_jvm_args.txt`}]:[]),
     {label:'Kabul edilen EULA ve başlatıcıyı kaydet',command:`set -eu\n${cd}\nprintf '%s\\n' 'eula=true' > eula.txt\nprintf '%s' ${shellQuote(startScript)} > start.sh\nchmod 700 start.sh\nmkdir -p ${edition === 'paper' ? 'plugins' : 'mods'}`},
   ];
   plan.notes.push(`Kurulum SSH kullanıcısının $HOME/${directory} dizinine yapılır. Mevcut dizinin üzerine yazılmaz.`, `Java ${requiredJava}+ ve python3 önceden kurulu olmalıdır.`, 'Otomatik kurulum SSP süreç köprüsünü de yükler; dünyayı Başlat düğmesiyle açabilirsiniz. Paper oyuncu köprüsü derlenmiş JAR dağıtımda varsa otomatik yüklenir; yoksa docs/BRIDGE.md adımlarını izleyin.');
@@ -139,7 +202,7 @@ export async function runInstallation(config: SshConfig, plan: InstallPlan, onLo
   const logs: string[] = [];
   const log = (line:string) => { logs.push(line); onLog(line); };
   try {
-    for (const step of plan.steps) { log(step.label); await execSsh(connection.client, step.command, log); }
+    for (const step of plan.steps) { log(step.label); await execSsh(connection.client, step.command, log,step.label.startsWith('NeoForge')?600000:180000); }
     log('Sunucu dosyaları kuruldu. Köprü yapılandırması ve ilk başlatma hazır.');
     return {status:'installed' as const, logs};
   } finally { connection.client.end(); }
@@ -151,6 +214,7 @@ export async function bootstrapBridge(config:SshConfig, plan:InstallPlan, option
   const port = options.bridgePort ?? config.bridgePort ?? 8765;
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Köprü portu 1024–65535 arasında olmalıdır.');
   const source = await readFile(resolvePath(process.cwd(),'bridge','ssp_bridge.py'),'utf8');
+  const discoverySource = await readFile(resolvePath(process.cwd(),'bridge','discover.py'),'utf8');
   const connection = await ssh(config);
   try {
     const sftp = await new Promise<any>((resolve,reject)=>connection.client.sftp((error,channel)=>error?reject(new Error('SFTP kanalı açılamadı.')):resolve(channel)));
@@ -171,6 +235,7 @@ export async function bootstrapBridge(config:SshConfig, plan:InstallPlan, option
     const write = (name:string,content:string,mode:number) => new Promise<void>((resolve,reject)=>sftp.writeFile(`${directory}/${name}`,content,{mode},(error:any)=>error?reject(new Error('Köprü dosyası SFTP ile yazılamadı.')):resolve()));
     onLog('SSP köprüsü şifreli SFTP ile aktarılıyor.');
     await write('ssp_bridge.py',source,0o600);
+    await write('discover.py',discoverySource,0o600);
     await write('.ssp-env',env,0o600);
     await write('.ssp-bridge-start.sh',wrapper,0o700);
     // The config is shipped before first world start so the Paper provider uses the same token/port.
@@ -225,7 +290,7 @@ export async function adapterRequest(server: any, path: string, method = 'GET', 
   try {
     return await new Promise((resolve,reject) => {
       const transport = url.protocol === 'https:' ? https : http;
-      const req = transport.request(url, {method, ...(stream ? {createConnection:()=>stream} : {agent:false as const}), timeout:20000, headers:{'Authorization':`Bearer ${token}`,'Accept':'application/json', ...(payload ? {'Content-Type':'application/json','Content-Length':payload.length} : {})}},res => {
+      const req = transport.request(url, {method, ...(stream ? {createConnection:()=>stream} : {agent:false as const}), timeout:path==='/mods'&&method==='POST'?600000:20000, headers:{'Authorization':`Bearer ${token}`,'Accept':'application/json', ...(payload ? {'Content-Type':'application/json','Content-Length':payload.length} : {})}},res => {
         let raw = ''; res.setEncoding('utf8');
         res.on('data', chunk => { raw += chunk; if (raw.length > 4*1024*1024) req.destroy(new Error('Köprü yanıtı çok büyük.')); });
         res.on('end', () => {

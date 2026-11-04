@@ -16,12 +16,20 @@ import subprocess
 import sys
 import threading
 import time
+import tempfile
+import zipfile
 import urllib.error
 import urllib.parse
 import urllib.request
 from collections import deque
+from contextlib import contextmanager
+from functools import wraps
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+try:
+    from discover import scan_mods
+except ImportError:
+    scan_mods = None
 
 TOKEN = os.environ.get("SSP_BRIDGE_TOKEN", "")
 ROOT = Path(os.environ.get("SSP_SERVER_DIR", ".")).resolve()
@@ -30,13 +38,15 @@ LOADER = os.environ.get("SSP_LOADER", "paper")
 PLUGIN_URL = os.environ.get("SSP_PROVIDER_URL", "http://127.0.0.1:8787").rstrip("/")
 PLUGIN_TOKEN = os.environ.get("SSP_PROVIDER_TOKEN", TOKEN)
 PORT = int(os.environ.get("SSP_BRIDGE_PORT", "8765"))
-USER_AGENT = "StylishServersPanel_SSP/0.1 (https://github.com/OpenMTLLC/StylishServersPanel_SSP)"
+USER_AGENT = "StylishServersPanel_SSP/0.2 (https://github.com/OpenMTLLC/StylishServersPanel_SSP)"
 LOGS: deque[dict] = deque(maxlen=500)
 LOG_LOCK = threading.RLock()
 PROCESS: subprocess.Popen | None = None
 STARTED = 0.0
 LOCK = threading.RLock()
 MOD_LOCK = threading.Lock()
+FILE_OPERATION_LOCK = threading.RLock()
+OPERATION_DEPTH = threading.local()
 CACHE: dict = {}
 
 
@@ -160,8 +170,12 @@ def command(text):
 
 def registry():
     filename = ROOT / ".ssp-mods.json"
+    if filename.is_symlink():
+        raise BridgeError("Mod kayıt dosyası sembolik bağlantı olamaz.", 409)
     if not filename.exists():
         return {}
+    if filename.stat().st_size > 4 * 1024 * 1024:
+        raise BridgeError("Mod kayıt dosyası boyut sınırını aşıyor.", 409)
     try:
         data = json.loads(filename.read_text("utf-8"))
         return data if isinstance(data, dict) else {}
@@ -170,7 +184,15 @@ def registry():
 
 
 def installed_mods():
-    return list(registry().values())
+    records = registry()
+    by_filename = {record.get("filename"): record for record in records.values()}
+    if scan_mods:
+        return [{**mod, **by_filename.get(mod.get("filename"), {})} for mod in scan_mods(ROOT)]
+    values = []
+    for folder in ("plugins", "mods"):
+        for path in sorted((ROOT / folder).glob("*.jar"))[:512]:
+            values.append(by_filename.get(path.name) or {"id": "manual:" + path.name, "name": path.stem, "filename": path.name, "version": None, "provider": "manual", "managed": False, "enabled": None})
+    return values
 
 
 def ensure_stopped():
@@ -202,6 +224,42 @@ def save_registry(data):
     temporary.replace(ROOT / ".ssp-mods.json")
 
 
+@contextmanager
+def mod_operation_lock():
+    """Serialize daemon and one-shot mutations in the same game directory."""
+    with FILE_OPERATION_LOCK:
+        if getattr(OPERATION_DEPTH, "value", 0):
+            OPERATION_DEPTH.value += 1
+            try:
+                yield
+            finally:
+                OPERATION_DEPTH.value -= 1
+            return
+        descriptor = None
+        try:
+            if os.name == "posix":
+                import fcntl
+                descriptor = os.open(ROOT / ".ssp-mod-operation.lock", os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
+                try:
+                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError:
+                    raise BridgeError("Bu sunucuda başka bir mod işlemi sürüyor; tamamlanmasını bekleyin.", 409) from None
+            OPERATION_DEPTH.value = 1
+            yield
+        finally:
+            OPERATION_DEPTH.value = 0
+            if descriptor is not None:
+                os.close(descriptor)
+
+
+def mod_mutation(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        with mod_operation_lock():
+            return function(*args, **kwargs)
+    return wrapped
+
+
 def modrinth(path):
     request = urllib.request.Request("https://api.modrinth.com/v2" + path, headers={"User-Agent": USER_AGENT})
     try:
@@ -211,84 +269,282 @@ def modrinth(path):
         raise BridgeError("Modrinth verileri alınamadı.", 502) from None
 
 
+def curseforge(path, api_key):
+    if not isinstance(api_key, str) or len(api_key) < 10 or len(api_key) > 512 or any(ord(c) < 32 or ord(c) > 126 for c in api_key):
+        raise BridgeError("CurseForge için geçerli bir API anahtarı yapılandırın.", 409)
+    request = urllib.request.Request("https://api.curseforge.com/v1" + path, headers={"User-Agent": USER_AGENT, "x-api-key": api_key, "Accept": "application/json"})
+    try:
+        with urllib.request.build_opener(NoRedirect).open(request, timeout=20) as response:
+            return json.loads(response.read(4 * 1024 * 1024))["data"]
+    except (OSError, ValueError, KeyError):
+        raise BridgeError("CurseForge API isteği başarısız. Anahtarın yetkisini kontrol edin.", 502) from None
+
+
+def allowed_cdn(url, provider):
+    parsed = urllib.parse.urlsplit(url)
+    host = (parsed.hostname or "").lower()
+    hosts = ["cdn.modrinth.com"] if provider == "modrinth" else ["forgecdn.net"]
+    return parsed.scheme == "https" and not parsed.username and not parsed.password and any(host == domain or provider == "curseforge" and host.endswith("." + domain) for domain in hosts)
+
+
+class CDNRedirect(urllib.request.HTTPRedirectHandler):
+    def __init__(self, provider):
+        self.provider = provider
+    def redirect_request(self, request, fp, code, message, headers, new_url):
+        if not allowed_cdn(new_url, self.provider):
+            raise BridgeError("İzin verilmeyen CDN yönlendirmesi reddedildi.")
+        # API credentials never enter a CDN request, including redirects.
+        return urllib.request.Request(new_url, headers={"User-Agent": USER_AGENT})
+
+
+def _identity(value, label):
+    if not isinstance(value, (str, int)) or not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", str(value)):
+        raise BridgeError(label + " kimliği geçersiz.")
+    return str(value)
+
+
+def _resolve_modrinth(project_id, version_id):
+    pinned = modrinth("/version/" + _identity(version_id, "Modrinth sürüm")) if version_id else None
+    if pinned and not project_id:
+        project_id = pinned["project_id"]
+    project = modrinth("/project/" + _identity(project_id, "Modrinth proje"))
+    loaders = ["paper", "spigot", "bukkit"] if LOADER == "paper" else [LOADER]
+    query = urllib.parse.urlencode({"game_versions": json.dumps([VERSION]), "loaders": json.dumps(loaders)})
+    versions = [pinned] if pinned else modrinth("/project/" + str(project["id"]) + "/version?" + query)
+    compatible = [v for v in versions if str(v.get("project_id", project["id"])) == str(project["id"]) and VERSION in v.get("game_versions", []) and set(loaders).intersection(v.get("loaders", [])) and v.get("version_type") == "release"]
+    compatible.sort(key=lambda v: v.get("date_published", ""), reverse=True)
+    chosen = next(iter(compatible), None)
+    if not chosen or project.get("server_side") == "unsupported":
+        raise BridgeError("Modrinth projesinin sunucu/oyun/yükleyiciyle uyumlu kararlı sürümü yok.", 409)
+    files = [file for file in chosen.get("files", []) if file.get("filename", "").endswith(".jar")]
+    artifact = next((file for file in files if file.get("primary")), None) or next(iter(files), None)
+    if not artifact:
+        raise BridgeError("Projede bir sunucu JAR dosyası bulunamadı.", 409)
+    dependencies = [(dep.get("project_id"), dep.get("version_id")) for dep in chosen.get("dependencies", []) if dep.get("dependency_type") == "required"]
+    return {"id": "modrinth:" + str(project["id"]), "projectId": str(project["id"]), "name": project.get("title", project_id), "version": chosen["version_number"], "versionId": chosen["id"], "author": project.get("slug", "Modrinth"), "description": project.get("description", ""), "enabled": True, "managed": True, "filename": artifact["filename"], "hashAlgorithm": "sha512", "hash": artifact.get("hashes", {}).get("sha512", ""), "provider": "modrinth", "url": artifact["url"], "dependencyRefs": dependencies}
+
+
+def _resolve_curseforge(project_id, version_id, api_key):
+    project_id = _identity(project_id, "CurseForge proje")
+    if not project_id.isdigit() or version_id is not None and not str(version_id).isdigit():
+        raise BridgeError("CurseForge sayısal proje/dosya kimliği gerektirir.")
+    if LOADER not in ("forge", "fabric", "neoforge"):
+        raise BridgeError("CurseForge otomatik kurulumu Forge, Fabric ve NeoForge modları içindir.", 409)
+    project = curseforge("/mods/" + project_id, api_key)
+    if project.get("allowModDistribution") is False:
+        raise BridgeError("Mod yazarı üçüncü taraf dağıtımını kapatmış; otomatik indirme yapılamaz.", 409)
+    if project.get("gameId") != 432 or project.get("classId") != 6:
+        raise BridgeError("CurseForge projesi bir Minecraft modu değil.", 409)
+    if project.get("isClientOnly") or project.get("clientOnly"):
+        raise BridgeError("Yalnız istemci modu sunucuya kurulamaz.", 409)
+    loader_number = {"forge": 1, "fabric": 4, "neoforge": 6}[LOADER]
+    query = urllib.parse.urlencode({"gameVersion": VERSION, "modLoaderType": loader_number, "pageSize": 50})
+    files = [curseforge(f"/mods/{project_id}/files/{version_id}", api_key)] if version_id else curseforge(f"/mods/{project_id}/files?{query}", api_key)
+    compatible = [file for file in files if file.get("modId") == int(project_id) and VERSION in file.get("gameVersions", []) and LOADER.lower() in [str(v).lower() for v in file.get("gameVersions", [])] and file.get("releaseType") == 1 and file.get("isAvailable") is not False]
+    compatible.sort(key=lambda file: file.get("fileDate", ""), reverse=True)
+    chosen = next(iter(compatible), None)
+    if not chosen:
+        raise BridgeError("CurseForge projesinin bu oyun/yükleyici için kararlı sürümü yok.", 409)
+    if not chosen.get("downloadUrl"):
+        raise BridgeError("CurseForge dosyası otomatik indirmeye kapalı; izin kısıtı aşılmaz.", 409)
+    if chosen.get("isClientOnly") or chosen.get("clientOnly") or "client" in [str(v).lower() for v in chosen.get("gameVersions", [])]:
+        raise BridgeError("Yalnız istemci modu sunucuya kurulamaz.", 409)
+    checksum = next((value.get("value") for value in chosen.get("hashes", []) if value.get("algo") == 1), None)
+    if not checksum:
+        raise BridgeError("CurseForge resmî SHA1 özeti yok; dosya kurulmadı.", 409)
+    authors = ", ".join(author.get("name", "") for author in project.get("authors", []))
+    return {"id": "curseforge:" + project_id, "projectId": project_id, "name": project.get("name", project_id), "version": chosen.get("displayName", str(chosen["id"])), "versionId": str(chosen["id"]), "author": authors, "description": project.get("summary", ""), "enabled": True, "managed": True, "filename": chosen["fileName"], "hashAlgorithm": "sha1", "hash": checksum.lower(), "provider": "curseforge", "url": chosen["downloadUrl"], "dependencyRefs": [(str(dep["modId"]), None) for dep in chosen.get("dependencies", []) if dep.get("relationType") == 3]}
+
+
+def _jar_ids(path):
+    """Read loader identities without executing any code from the archive."""
+    identities = set()
+    try:
+        with zipfile.ZipFile(path) as archive:
+            for name in ("fabric.mod.json", "META-INF/neoforge.mods.toml", "META-INF/mods.toml", "plugin.yml"):
+                try:
+                    entry = archive.getinfo(name)
+                except KeyError:
+                    continue
+                if entry.file_size > 262144:
+                    raise BridgeError("Mod kimlik bilgisi boyut sınırını aşıyor.", 409)
+                content = archive.read(entry).decode("utf-8", "replace")
+                if name.endswith(".json"):
+                    identity = json.loads(content).get("id")
+                    if isinstance(identity, str):
+                        identities.add("mod:" + identity.casefold())
+                elif name.endswith(".toml"):
+                    # Only [[mods]], not dependency modId fields such as minecraft.
+                    for section in re.finditer(r"(?ms)^\s*\[\[mods\]\]\s*(.*?)(?=^\s*\[|\Z)", content):
+                        identity = re.search(r"(?m)^\s*modId\s*=\s*['\"]([^'\"]+)['\"]", section.group(1))
+                        if identity:
+                            identities.add("mod:" + identity.group(1).casefold())
+                else:
+                    identity = re.search(r"(?m)^name:\s*['\"]?([^\r\n'\"]+)", content)
+                    if identity:
+                        identities.add("plugin:" + identity.group(1).strip().casefold())
+    except (OSError, ValueError, zipfile.BadZipFile):
+        return set()
+    return identities
+
+
+def _download_artifact(record, target, budget):
+    if not re.fullmatch(r"[A-Za-z0-9._+()\- ]{1,180}\.jar", record.get("filename", "")) or not allowed_cdn(record.get("url", ""), record["provider"]):
+        raise BridgeError("Mod dosya adı veya resmî CDN adresi geçersiz.")
+    algorithm = record["hashAlgorithm"]
+    if algorithm not in ("sha512", "sha1") or not re.fullmatch(r"[a-f0-9]{" + str(128 if algorithm == "sha512" else 40) + r"}", record.get("hash", "")):
+        raise BridgeError("Resmî dosya özeti geçersiz.")
+    digest = hashlib.new(algorithm)
+    request = urllib.request.Request(record["url"], headers={"User-Agent": USER_AGENT})
+    with urllib.request.build_opener(CDNRedirect(record["provider"])).open(request, timeout=60) as response, target.open("xb") as output:
+        if not allowed_cdn(response.url, record["provider"]):
+            raise BridgeError("Mod CDN adresi doğrulanamadı.")
+        size = 0
+        while block := response.read(65536):
+            size += len(block)
+            budget[0] += len(block)
+            if size > 128 * 1024 * 1024 or budget[0] > 512 * 1024 * 1024:
+                raise BridgeError("Mod işlemi dosya boyutu sınırını aşıyor.")
+            digest.update(block)
+            output.write(block)
+    if not hmac.compare_digest(digest.hexdigest(), record["hash"]):
+        raise BridgeError("Mod dosya özeti eşleşmiyor; hiçbir mod kurulmadı.")
+    # CurseForge has no universal server-side field. Reject explicit Fabric client metadata too.
+    try:
+        with zipfile.ZipFile(target) as jar:
+            info = jar.getinfo("fabric.mod.json")
+            if info.file_size <= 262144 and json.loads(jar.read(info)).get("environment") == "client":
+                raise BridgeError("JAR yalnız istemci için işaretlenmiş; sunucuya kurulamaz.", 409)
+    except KeyError:
+        pass
+    except (ValueError, zipfile.BadZipFile):
+        raise BridgeError("İndirilen dosya geçerli JAR metadata içermiyor.") from None
+
+
+@mod_mutation
 def install_mod(data):
     ensure_stopped()
-    project_id = data.get("projectId", "")
-    version_id = data.get("versionId")
-    if not isinstance(project_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", project_id):
-        raise BridgeError("Modrinth proje kimliği geçersiz.")
-    if version_id is not None and (not isinstance(version_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", version_id)):
-        raise BridgeError("Modrinth sürüm kimliği geçersiz.")
-    project = modrinth("/project/" + project_id)
-    loaders = ["paper", "spigot", "bukkit"] if LOADER == "paper" else [LOADER]
-    if LOADER not in ("paper", "fabric", "forge", "neoforge"):
-        raise BridgeError("Bu sunucu türü Modrinth JAR yüklemeyi desteklemiyor.", 409)
-    query = urllib.parse.urlencode({"game_versions": json.dumps([VERSION]), "loaders": json.dumps(loaders)})
-    versions = modrinth("/project/" + project_id + "/version?" + query)
-    compatible = [v for v in versions if VERSION in v.get("game_versions", []) and set(loaders).intersection(v.get("loaders", [])) and v.get("version_type") == "release"]
-    chosen = next((v for v in compatible if v.get("id") == version_id), None) if version_id else next(iter(compatible), None)
-    if not chosen or project.get("server_side") == "unsupported":
-        raise BridgeError("Sunucu sürümü ve yükleyicisiyle uyumlu kararlı sürüm bulunamadı.", 409)
+    provider_name = data.get("provider", "modrinth")
+    if provider_name not in ("modrinth", "curseforge") or LOADER not in ("paper", "fabric", "forge", "neoforge"):
+        raise BridgeError("Mod sağlayıcısı veya sunucu yükleyicisi desteklenmiyor.", 409)
+    _identity(data.get("projectId", ""), "Mod proje")
+    api_key = data.get("apiKey") or data.get("curseforgeApiKey")
     records = registry()
-    if project["id"] in records:
-        raise BridgeError("Bu proje zaten yüklü. Farklı sürüm için önce mevcut sürümü kaldırın.", 409)
-    for dependency in chosen.get("dependencies", []):
-        if dependency.get("dependency_type") == "required" and not any(r.get("id") == dependency.get("project_id") or r.get("versionId") == dependency.get("version_id") for r in records.values()):
-            raise BridgeError("Önce gerekli bağımlılığı yükleyin: " + str(dependency.get("project_id") or dependency.get("version_id")), 409)
-    files = [f for f in chosen.get("files", []) if f.get("filename", "").endswith(".jar")]
-    artifact = next((f for f in files if f.get("primary")), None) or next(iter(files), None)
-    if not artifact or not re.fullmatch(r"[A-Za-z0-9._+-]{1,180}\.jar", artifact.get("filename", "")):
-        raise BridgeError("Güvenli bir JAR dosyası bulunamadı.")
-    url = urllib.parse.urlsplit(artifact.get("url", ""))
-    expected = artifact.get("hashes", {}).get("sha512", "")
-    if url.scheme != "https" or url.hostname != "cdn.modrinth.com" or not re.fullmatch(r"[a-f0-9]{128}", expected):
-        raise BridgeError("Mod indirme adresi veya SHA512 özeti doğrulanamadı.")
+    graph = {}
+    visiting = set()
+    def visit(project_id, version_id=None, depth=0):
+        if depth > 16 or len(graph) >= 32:
+            raise BridgeError("Zorunlu bağımlılık sınırı aşıldı (32 mod/16 seviye).", 409)
+        record = _resolve_modrinth(project_id, version_id) if provider_name == "modrinth" else _resolve_curseforge(project_id, version_id, api_key)
+        key = record["id"]
+        if key in graph:
+            if graph[key]["versionId"] != record["versionId"]:
+                raise BridgeError("Bağımlılıklar farklı sürümler gerektiriyor; mevcut dosyalar değiştirilmedi.", 409)
+            return key
+        graph[key] = record
+        visiting.add(key)
+        record["dependencies"] = [visit(project, version, depth + 1) for project, version in record.pop("dependencyRefs")]
+        visiting.discard(key)
+        return key
+    root_key = visit(data["projectId"], data.get("versionId"))
     directory = ROOT / ("plugins" if LOADER == "paper" else "mods")
-    directory.mkdir(exist_ok=True)
-    destination = directory / artifact["filename"]
-    if destination.exists():
-        raise BridgeError("Aynı adlı dosya var; üzerine yazılmadı. Önce mevcut sürümü kaldırın.", 409)
-    temporary = directory / (artifact["filename"] + ".ssp-part")
-    digest = hashlib.sha512()
+    if directory.is_symlink():
+        raise BridgeError("Mod dizini sembolik bağlantı olamaz.", 409)
+    existing_ids = {}
+    if directory.exists():
+        for existing_path in sorted(directory.glob("*.jar"))[:512]:
+            if existing_path.is_symlink():
+                raise BridgeError("Mod dizininde sembolik JAR bağlantısı var; kimlik çakışması güvenli biçimde denetlenemedi.", 409)
+            for identity in _jar_ids(existing_path):
+                existing_ids.setdefault(identity, set()).add(existing_path.name)
+    planned_ids = {}
+    created = []
+    staged = []
+    updated = dict(records)
+    filenames = set()
     try:
-        request = urllib.request.Request(artifact["url"], headers={"User-Agent": USER_AGENT})
-        with urllib.request.urlopen(request, timeout=60) as response, temporary.open("xb") as target:
-            if urllib.parse.urlsplit(response.url).hostname != "cdn.modrinth.com":
-                raise BridgeError("Mod CDN yönlendirmesi reddedildi.")
-            total = 0
-            while block := response.read(65536):
-                total += len(block)
-                if total > 128 * 1024 * 1024:
-                    raise BridgeError("Mod dosyası 128 MiB sınırını aşıyor.")
-                digest.update(block)
-                target.write(block)
-        if not hmac.compare_digest(digest.hexdigest(), expected):
-            raise BridgeError("Mod SHA512 özeti eşleşmiyor; dosya kurulmadı.")
-        temporary.replace(destination)
+        with tempfile.TemporaryDirectory(prefix=".ssp-stage-", dir=ROOT) as temporary:
+            budget = [0]
+            for key, record in graph.items():
+                previous_pair = next(((known_key, value) for known_key, value in records.items() if value.get("provider", "modrinth") == provider_name and str(value.get("projectId", str(value.get("id", "")).split(":")[-1])) == record["projectId"]), None)
+                previous = previous_pair[1] if previous_pair else None
+                if previous and str(previous.get("versionId")) != str(record["versionId"]):
+                    raise BridgeError("Bir bağımlılığın farklı sürümü zaten yüklü; önce mevcut sürümü kaldırın.", 409)
+                if record["filename"] in filenames:
+                    raise BridgeError("Bağımlılıklar aynı dosya adını kullanıyor.", 409)
+                filenames.add(record["filename"])
+                target = Path(temporary) / record["filename"]
+                _download_artifact(record, target, budget)
+                for identity in _jar_ids(target):
+                    if any(name != record["filename"] for name in existing_ids.get(identity, set())):
+                        raise BridgeError("Bu modun başka bir dosyası zaten yüklü. Önce mevcut sürümü kaldırın; ikinci bir kopya kurulmadı.", 409)
+                    if identity in planned_ids and planned_ids[identity] != record["filename"]:
+                        raise BridgeError("Seçilen mod ve bağımlılıkları aynı yükleyici kimliğini kullanıyor.", 409)
+                    planned_ids[identity] = record["filename"]
+                destination = directory / record["filename"]
+                if destination.exists():
+                    digest = hashlib.new(record["hashAlgorithm"])
+                    if destination.is_symlink() or destination.stat().st_size > 128 * 1024 * 1024:
+                        raise BridgeError("Aynı adlı dosya güvenli biçimde doğrulanamadı.", 409)
+                    with destination.open("rb") as existing:
+                        while block := existing.read(65536):
+                            digest.update(block)
+                    if digest.hexdigest() != record["hash"]:
+                        raise BridgeError("Aynı adlı farklı dosya var; üzerine yazılmadı.", 409)
+                    if not previous:
+                        record["managed"] = False
+                    else:
+                        updated.pop(previous_pair[0], None)
+                        updated[key] = {field: value for field, value in record.items() if field != "url"}
+                    continue
+                staged.append((target, destination, record))
+            # Downloads can take time: re-check immediately before committing any file.
+            ensure_stopped()
+            directory.mkdir(exist_ok=True)
+            for source, destination, record in staged:
+                os.link(source, destination)  # Atomic no-replace; staging is on the same filesystem.
+                created.append(destination)
+                clean = {key: value for key, value in record.items() if key not in ("url",)}
+                updated[record["id"]] = clean
+            save_registry(updated)
+    except BridgeError:
+        for destination in reversed(created):
+            destination.unlink(missing_ok=True)
+        raise
     except OSError:
-        raise BridgeError("Mod dosyası indirilemedi veya yazılamadı.", 502) from None
-    finally:
-        temporary.unlink(missing_ok=True)
-    record = {"id": project["id"], "name": project["title"], "version": chosen["version_number"], "versionId": chosen["id"], "author": project.get("slug", "Modrinth"), "description": project.get("description", ""), "enabled": True, "filename": artifact["filename"], "sha512": expected, "provider": "modrinth"}
-    records[record["id"]] = record
-    save_registry(records)
-    log("Mod yüklendi: " + record["name"] + " " + record["version"])
-    return record
+        for destination in reversed(created):
+            destination.unlink(missing_ok=True)
+        raise BridgeError("Mod işlemi tamamlanamadı; yeni dosyalar geri alındı.", 502) from None
+    result = {key: value for key, value in graph[root_key].items() if key != "url"}
+    result["installed"] = [{key: value for key, value in record.items() if key != "url"} for record in graph.values()]
+    log("Mod ve zorunlu bağımlılıklar hazır: " + str(result["name"]))
+    return result
 
 
+@mod_mutation
 def delete_mod(mod_id):
     ensure_stopped()
     records = registry()
     record = records.get(mod_id)
     if not record:
         raise BridgeError("Yalnızca SSP üzerinden yüklenmiş modlar kaldırılabilir.", 404)
+    if record.get("managed") is False:
+        raise BridgeError("Elle yüklenmiş dosya SSP tarafından kaldırılamaz.", 409)
+    canonical = record.get("provider", "modrinth") + ":" + str(record.get("projectId", mod_id.split(":")[-1]))
+    if any(canonical in value.get("dependencies", []) for key, value in records.items() if key != mod_id):
+        raise BridgeError("Bu moda bağımlı yüklü modlar var; önce onları kaldırın.", 409)
     filename = record.get("filename", "")
-    if not re.fullmatch(r"[A-Za-z0-9._+-]{1,180}\.jar", filename):
+    if not re.fullmatch(r"[A-Za-z0-9._+()\- ]{1,180}\.jar", filename):
         raise BridgeError("Mod dosya kaydı geçersiz.", 409)
-    path = ROOT / ("plugins" if LOADER == "paper" else "mods") / filename
+    folder = ROOT / ("plugins" if LOADER == "paper" else "mods")
+    if folder.is_symlink():
+        raise BridgeError("Mod dizini sembolik bağlantı olamaz.", 409)
+    path = folder / filename
     # Move to quarantine instead of destroying a server administrator's artifact.
     if path.exists():
         quarantine = ROOT / ".ssp-removed"
+        if quarantine.is_symlink():
+            raise BridgeError("Karantina dizini sembolik bağlantı olamaz.", 409)
         quarantine.mkdir(exist_ok=True)
         path.rename(quarantine / (str(time.time_ns()) + "-" + filename))
     del records[mod_id]
@@ -298,7 +554,7 @@ def delete_mod(mod_id):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "SSPBridge/0.1"
+    server_version = "SSPBridge/0.2"
     def setup(self):
         super().setup()
         self.connection.settimeout(15)
@@ -321,6 +577,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply({"error": "Yetkisiz köprü isteği."}, 401)
         try:
             parsed = urllib.parse.urlsplit(self.path)
+            path = urllib.parse.unquote(parsed.path)
             body = None
             if self.command in ("POST", "PUT", "PATCH", "DELETE"):
                 length = int(self.headers.get("Content-Length", "0"))
@@ -343,9 +600,9 @@ class Handler(BaseHTTPRequestHandler):
             if self.command == "POST" and parsed.path == "/mods":
                 with LOCK, MOD_LOCK:
                     return self.reply(install_mod(body))
-            if self.command == "DELETE" and re.fullmatch(r"/mods/[A-Za-z0-9_-]{1,80}", parsed.path):
+            if self.command == "DELETE" and re.fullmatch(r"/mods/(?:modrinth:|curseforge:)?[A-Za-z0-9_-]{1,80}", path):
                 with LOCK, MOD_LOCK:
-                    return self.reply(delete_mod(parsed.path.rsplit("/", 1)[1]))
+                    return self.reply(delete_mod(path.rsplit("/", 1)[1]))
             if parsed.path == "/chat" and self.command == "POST" or re.fullmatch(r"/players/[a-fA-F0-9-]{36}(?:/inventory)?", parsed.path) and self.command in ("GET", "PATCH", "PUT"):
                 return self.reply(provider(self.path, self.command, body))
             raise BridgeError("Köprü yolu bulunamadı.", 404)

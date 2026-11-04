@@ -1,0 +1,514 @@
+/* SSP's readable type scale. Keep body copy and controls comfortable at 100%. */
+:root, body { font-size: 16px; line-height: 1.6; }
+.sidebar { width: 264px; padding: 30px 18px 0; }
+.main-shell { margin-left: 264px; }
+.brand strong { font-size: 34px; }
+.brand div > span { font-size: 12px; letter-spacing: .25px; line-height: 1.6; }
+.brand { gap: 11px; padding-left: 0; }
+.workspace-label, .nav-label { font-size: 12px; letter-spacing: .6px; line-height: 1.8; }
+.workspace-label { flex-wrap: wrap; gap: 7px; }
+.workspace-label > span { font-size: 12px; }
+.workspace-card { padding: 15px 12px; }
+.workspace-card strong { font-size: 15px; }
+.workspace-card div > span { font-size: 12px; }
+.nav-item { font-size: 15px; min-height: 50px; padding: 12px 14px; gap: 13px; }
+.nav-item > svg { width: 20px; height: 20px; }
+.nav-count { font-size: 12px; min-width: 24px; line-height: 1.3; }
+.nav-active-line { left: -19px; }
+.sidebar-bottom { padding-top: 35px; }
+.open-source { padding: 17px 12px; }
+.open-source > span { font-size: 12px; white-space: normal; letter-spacing: 0; line-height: 1.8; }
+.open-source p { font-size: 21px; line-height: 1.5; }
+.open-source a { font-size: 13px; }
+.account { margin: 0 -18px; padding: 19px 18px; gap: 11px; }
+.account strong { font-size: 14px; }
+.account div > span { font-size: 12px; }
+.account .avatar { width: 37px; height: 37px; font-size: 12px; }
+.topbar { min-height: 76px; padding: 14px 32px; gap: 15px; }
+.breadcrumbs { font-size: 13px; gap: 10px; flex-wrap: wrap; }
+.connection-label, .version { font-size: 12px; }
+main { max-width: 1700px; padding: 34px 32px 0; }
+.page-title-row { gap: 22px; flex-wrap: wrap; margin-bottom: 27px; }
+.eyebrow, .page-title-row .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: 1.1px; }
+.page-title-row h1 { font-size: 38px; line-height: 1.35; }
+.page-description { font-size: 15px; line-height: 1.8; margin-top: 8px; max-width: none; }
+.page-actions { margin: 0; padding: 0; gap: 11px; flex-wrap: wrap; align-self: center; }
+.page-actions .button { font-size: 15px; min-height: 45px; padding: 11px 16px; }
+.select-wrap { min-height: 45px; padding: 0 12px; }
+.select-wrap > select { font-size: 14px; max-width: 220px; min-height: 43px; padding: 10px 5px; }
+.button, .button.primary, .button.secondary, .button.danger-outline { font-size: 15px; line-height: 1.5; min-height: 43px; padding: 10px 14px; gap: 8px; }
+.button.small { font-size: 13px; min-height: 38px; padding: 8px 11px; }
+.text-button, .panel-heading .text-button, .overview-note > .text-button { font-size: 13px; line-height: 1.7; gap: 7px; }
+.inline-link { font-size: 14px; }
+.icon-button { width: 34px; height: 34px; }
+.tag, .mini-tag { font-size: 12px; line-height: 1.4; padding: 4px 7px; }
+.status { font-size: 13px; gap: 8px; }
+.status-dot { height: 7px; width: 7px; }
+.demo-banner { padding: 15px 18px; gap: 17px; flex-wrap: wrap; }
+.demo-banner > span:first-child, .demo-mode { font-size: 12px; line-height: 1.8; }
+.demo-banner p { font-size: 13px; line-height: 1.8; }
+.server-overview-bar { padding: 20px; gap: 18px; flex-wrap: wrap; }
+.server-identity { gap: 15px; }
+.server-identity h2 { font-size: 19px; gap: 12px; line-height: 1.6; flex-wrap: wrap; }
+.server-identity h2 .tag { font-size: 12px; }
+.address-copy, .server-identity .address-copy { font-size: 13px; gap: 9px; line-height: 1.7; }
+.game-icon { width: 51px; height: 53px; }
+.server-bar-right { gap: 11px; flex-wrap: wrap; }
+.server-bar-right > .status { font-size: 13px; padding: 6px 9px; }
+.server-bar-right > .button, .server-bar-right > .button.secondary { font-size: 13px; min-height: 40px; padding: 9px 12px; width: auto; height: auto; gap: 7px; }
+.stats-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; margin-bottom: 25px; }
+.stat-card { padding: 22px; min-height: 184px; }
+.stat-top > span { font-size: 14px; line-height: 1.7; gap: 9px; }
+.stat-top > span > svg { width: 18px; height: 18px; }
+.stat-top > svg { display: none; }
+.stat-value { font-size: 36px; letter-spacing: -1px; gap: 9px; margin-top: 22px; }
+.stat-value > span { font-size: 14px; letter-spacing: 0; }
+.stat-bottom { gap: 9px; flex-wrap: wrap; margin-top: 24px; }
+.stat-bottom > span:first-child, .stat-badge { font-size: 12px; line-height: 1.6; }
+.stat-badge { padding: 4px 7px; }
+.sparkline { height: 58px; opacity: .22; }
+.dashboard-grid { grid-template-columns: minmax(0,1fr); gap: 24px; }
+.dashboard-console, .server-details, .online-panel { grid-row: auto; }
+.panel-heading { min-height: 73px; padding: 20px 22px; gap: 17px; flex-wrap: wrap; }
+.panel-heading > div { gap: 11px; flex-wrap: wrap; }
+.panel-heading h3 { font-size: 17px; line-height: 1.6; white-space: normal; }
+.panel-icon > svg, .panel-heading > div > svg { width: 20px; height: 20px; }
+.live-label, .dashboard-console .panel-heading .live-label { font-size: 12px; letter-spacing: .4px; line-height: 1.5; padding: 4px 6px; }
+.count-pill { font-size: 12px; min-height: 23px; min-width: 24px; padding: 2px 6px; }
+.console-lines { height: 320px; padding: 20px; font-size: 13px; line-height: 1.9; }
+.console-line, .full-console .console-line { grid-template-columns: 67px 49px minmax(0,1fr); gap: 12px; font-size: 13px; min-height: 31px; line-height: 1.8; }
+.console-time, .console-level, .full-console .console-time, .full-console .console-level { font-size: 12px; line-height: 1.8; }
+.console-command { min-height: 57px; padding: 0 17px; gap: 11px; }
+.console-command input, .full-console .console-command input { font-size: 14px; min-height: 55px; height: 55px; }
+.console-command kbd { font-size: 12px; line-height: 21px; padding: 0 5px; }
+.console-idle { font-size: 14px; }
+.full-console .console-lines { min-height: 430px; }
+.console-filter { padding: 17px 20px; }
+.console-filter > span { font-size: 13px; }
+.details-content { padding: 0 22px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 30px; }
+.detail-item { padding: 19px 0; gap: 14px; align-items: center; flex-direction: row; flex-wrap: wrap; }
+.detail-item > span, .detail-item strong, .detail-item .inline-link { font-size: 14px; line-height: 1.8; }
+.storage-usage { padding-top: 21px; grid-column: 1 / -1; }
+.storage-usage > div:first-child, .storage-usage strong { font-size: 14px; line-height: 1.8; }
+.storage-usage small, .storage-usage > p { font-size: 12px; }
+.progress-track { height: 7px; }
+.compact-player-list { padding: 0 22px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 30px; }
+.compact-player { padding: 19px 0; gap: 13px; }
+.compact-player strong { font-size: 15px; }
+.compact-player div > span:not(.avatar):not(.status-dot), .compact-player .ping { font-size: 12px; line-height: 1.6; }
+.compact-player .avatar { height: 40px; width: 40px; font-size: 13px; }
+.activity-preview { padding: 0 22px; }
+.activity-preview-row { min-height: 87px; padding: 19px 0; gap: 14px; }
+.activity-preview-row strong { font-size: 14px; line-height: 1.8; white-space: normal; }
+.activity-preview-row div > span { font-size: 12px; line-height: 1.8; gap: 9px; flex-wrap: wrap; }
+.activity-event-icon { height: 35px; width: 35px; }
+.overview-note { padding: 24px 0; gap: 12px; font-size: 14px; line-height: 1.8; flex-wrap: wrap; }
+.overview-note > p { font-size: 13px; line-height: 1.9; flex-basis: 100%; padding-left: 29px; }
+.overview-note > .text-button { margin-left: auto; }
+.page-footer { font-size: 12px; line-height: 1.8; padding: 24px 0 28px; gap: 17px; flex-wrap: wrap; }
+.section-summary { font-size: 14px; line-height: 1.8; gap: 24px; flex-wrap: wrap; }
+.search-input { min-height: 45px; padding: 0 13px; max-width: 440px; min-width: 180px; }
+.search-input input { font-size: 15px; min-height: 43px; }
+.search-input > svg { width: 18px; height: 18px; }
+.search-input kbd { font-size: 12px; }
+.table-toolbar { padding: 21px; gap: 18px; flex-wrap: wrap; }
+.toolbar-right { gap: 12px; flex-wrap: wrap; }
+.form-select, .table-toolbar .form-select { font-size: 14px; min-height: 44px; padding: 10px 35px 10px 12px; }
+th { font-size: 12px; letter-spacing: .4px; line-height: 1.7; padding: 17px 20px; }
+td { font-size: 14px; line-height: 1.8; padding: 20px; }
+.mono, .uuid-copy { font-size: 12px; line-height: 1.8; }
+.player-name-button { gap: 12px; }
+.player-name-button strong { font-size: 15px; }
+.avatar { width: 39px; height: 39px; font-size: 13px; }
+.avatar.tiny, .table-user .avatar.tiny { width: 29px; height: 29px; font-size: 12px; }
+.avatar.large { width: 65px; height: 65px; font-size: 21px; }
+.ping { font-size: 13px; }
+.role-tag, .audit-status { font-size: 12px; line-height: 1.5; padding: 5px 8px; }
+.table-footer { font-size: 12px; line-height: 1.9; padding: 18px 21px; gap: 16px; flex-wrap: wrap; }
+.table-footer > span:last-child { max-width: none; }
+.audit-action { gap: 14px; }
+.audit-action > div { max-width: 440px; }
+.audit-action strong { font-size: 14px; line-height: 1.7; }
+.audit-action div > span { font-size: 12px; line-height: 1.8; }
+.table-user { font-size: 14px; gap: 10px; }
+.activity-table td { padding: 21px 20px; }
+.activity-table .button { font-size: 13px; padding: 9px 12px; min-height: 39px; }
+.filter-tabs { gap: 6px; flex-wrap: wrap; }
+.filter-tabs > button, .chat-toolbar > .filter-tabs > button { font-size: 14px; min-height: 43px; padding: 10px 12px; gap: 8px; }
+.filter-tabs .count-pill { font-size: 12px; }
+.chat-toolbar { padding: 20px; gap: 16px; flex-wrap: wrap; }
+.chat-toolbar > .live-label { font-size: 12px; }
+.chat-filters { padding: 18px 20px; gap: 13px; flex-wrap: wrap; }
+.chat-filters > .form-select { font-size: 14px; }
+.chat-feed { height: 520px; padding: 27px 23px; }
+.chat-message { padding-bottom: 29px; gap: 14px; }
+.chat-message > .avatar { height: 37px; width: 37px; font-size: 12px; }
+.chat-meta { gap: 11px; }
+.chat-meta > strong { font-size: 15px; }
+.chat-meta > time, .chat-meta > .channel-label, .chat-meta > .whisper-label { font-size: 12px; line-height: 1.7; }
+.chat-meta > .command-label { font-size: 12px; padding: 4px 6px; }
+.chat-message-content > p { font-size: 16px; line-height: 1.9; margin-top: 8px; }
+.command-message .chat-message-content > p { font-size: 13px; line-height: 1.9; padding: 8px 12px; }
+.chat-day-divider { font-size: 12px; }
+.chat-compose { margin: 0 20px 18px; padding: 11px 12px 11px 17px; gap: 13px; }
+.compose-prefix { font-size: 12px; gap: 8px; padding-right: 14px; }
+.chat-compose input { font-size: 16px; min-height: 41px; }
+.chat-compose .button { font-size: 14px; min-height: 43px; padding: 10px 13px; gap: 7px; }
+.chat-privacy { font-size: 12px; line-height: 1.9; padding: 0 23px 21px; gap: 8px; }
+.mods-hero { padding: 29px 25px; gap: 22px; }
+.mods-hero h2 { font-size: 27px; line-height: 1.5; letter-spacing: -.6px; }
+.mods-hero p { font-size: 15px; line-height: 1.8; margin-top: 11px; max-width: none; }
+.mods-hero .eyebrow { font-size: 12px; }
+.mods-hero-icon { width: 65px; height: 66px; }
+.compatibility-badge { font-size: 13px; line-height: 1.7; padding: 9px 12px; }
+.mods-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 21px; padding: 23px; }
+.mod-card { padding: 23px; }
+.mod-card > h3 { font-size: 21px; line-height: 1.5; margin-top: 20px; }
+.mod-author { font-size: 13px; line-height: 1.8; }
+.mod-card > p { font-size: 14px; line-height: 1.9; min-height: 70px; }
+.mod-card .tag, .mod-installed { font-size: 12px; line-height: 1.7; }
+.mod-card .mod-icon { width: 49px; height: 49px; }
+.mod-card-footer { padding-top: 20px; margin-top: 20px; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.mod-card-footer > span { font-size: 12px; line-height: 1.7; }
+.mod-card-footer > .button { font-size: 14px; min-height: 43px; padding: 10px 12px; white-space: normal; text-align: left; }
+.mod-search { max-width: 440px; }
+.mod-search .button { font-size: 14px; }
+.provider-toolbar { padding: 19px 23px; border-bottom: 1px solid #333a32; display: flex; align-items: center; justify-content: space-between; gap: 17px; flex-wrap: wrap; }
+.provider-note { font-size: 12px; color: #969e90; line-height: 1.9; max-width: 500px; }
+.provider-unavailable { margin: 23px; display: flex; align-items: flex-start; gap: 17px; padding: 23px; border: 1px solid #565540; border-radius: 7px; background: #26271f; }
+.provider-unavailable h3 { font-size: 18px; margin-bottom: 9px; }
+.provider-unavailable p { font-size: 14px; line-height: 1.9; color: #a2a58e; }
+.provider-unavailable .button { margin-top: 18px; }
+.mod-install-reason { font-size: 12px; color: #c0b58a; line-height: 1.8; margin-top: 15px; }
+.official-mod-link { font-size: 13px; color: #b9c9ab; display: inline-flex; align-items: center; gap: 7px; line-height: 1.7; margin-top: 12px; text-decoration: underline; text-underline-offset: 4px; }
+.provider-pill { font-size: 12px; line-height: 1.4; border: 1px solid #454c3e; color: #a9ba9a; padding: 5px 7px; border-radius: 4px; }
+.undo-info { padding: 25px; gap: 21px; }
+.undo-info h3 { font-size: 19px; line-height: 1.7; }
+.undo-info p { font-size: 14px; line-height: 1.9; max-width: 750px; }
+.undo-info-icon { height: 54px; width: 54px; }
+.switch-label { font-size: 14px; }
+.retention-label { font-size: 13px; gap: 8px; }
+.settings-grid { gap: 24px; }
+.settings-card > .form-stack { padding: 25px; }
+.form-stack { gap: 24px; }
+.form-stack label, .settings-card label, .slot-editor label { font-size: 14px; line-height: 1.7; gap: 11px; }
+.form-stack input, .form-stack select, .form-stack textarea, .slot-editor input { font-size: 16px; line-height: 1.5; min-height: 47px; padding: 12px 14px; }
+.field-optional, .auth-form-wrap .field-optional { font-size: 12px; line-height: 1.7; }
+.field-help { font-size: 12px; line-height: 1.9; gap: 7px; }
+.form-grid { gap: 19px; }
+.setting-description h3 { font-size: 20px; line-height: 1.7; }
+.setting-description p { font-size: 14px; line-height: 1.9; }
+.setting-switch strong { font-size: 16px; line-height: 1.8; }
+.setting-switch p { font-size: 13px; line-height: 1.9; max-width: 350px; }
+.permission-note { font-size: 14px; line-height: 1.9; padding: 18px; gap: 13px; }
+.permission-note strong { font-size: 14px; }
+.permission-note p { font-size: 13px; line-height: 1.9; }
+.invite-create { gap: 18px; flex-wrap: wrap; }
+.invite-create > .button { font-size: 15px; min-height: 47px; }
+.generated-code { padding: 20px; }
+.generated-code > span { font-size: 12px; line-height: 1.7; }
+.generated-code input:read-only { font-size: 13px; line-height: 1.7; min-height: 45px; }
+.generated-code p { font-size: 12px; line-height: 1.9; }
+.invite-list strong { font-size: 15px; }
+.invite-list span { font-size: 12px; line-height: 1.8; }
+.invite-list .button { font-size: 13px; min-height: 39px; }
+.redeem-form > label { font-size: 14px; line-height: 1.8; }
+.redeem-form input { font-size: 13px; line-height: 1.8; min-height: 47px; }
+.redeem-form .button { font-size: 14px; }
+.bridge-form { padding: 22px; gap: 21px; }
+.bridge-form strong { font-size: 16px; }
+.bridge-form .tag { font-size: 12px; line-height: 1.5; }
+.bridge-form p { font-size: 13px; line-height: 1.9; }
+.bridge-form label { font-size: 14px; }
+.bridge-form .button { font-size: 14px; }
+.modal { max-width: 610px; padding: 31px; max-height: calc(100vh - 48px); }
+.modal.wide { max-width: 870px; }
+.modal-heading { margin-bottom: 29px; gap: 21px; }
+.modal-heading h2 { font-size: 27px; line-height: 1.5; }
+.modal-heading p { font-size: 14px; line-height: 1.9; margin-top: 9px; max-width: 690px; }
+.modal-actions { gap: 18px; padding-top: 25px; margin-top: 9px; flex-wrap: wrap; }
+.modal-actions > .button { font-size: 15px; min-height: 45px; padding: 11px 16px; }
+.wizard-steps { gap: 18px; padding-bottom: 25px; margin-bottom: 29px; }
+.wizard-steps > div { font-size: 14px; gap: 10px; line-height: 1.8; }
+.wizard-steps > div > span { height: 30px; width: 30px; font-size: 12px; }
+.game-options { gap: 14px; }
+.game-options > button { padding: 23px 14px; gap: 14px; min-height: 95px; }
+.game-options strong { font-size: 15px; }
+.wizard-question { font-size: 20px; line-height: 1.7; }
+.setup-options { gap: 17px; }
+.setup-options > button { padding: 24px 20px; gap: 15px; }
+.setup-options strong { font-size: 18px; line-height: 1.5; }
+.setup-options span { font-size: 14px; line-height: 1.8; }
+.setup-options > button.active:after { font-size: 17px; right: 15px; top: 15px; }
+.probe-row > .button { font-size: 15px; min-height: 45px; }
+.probe-row > .green-text { font-size: 13px; }
+.form-stack .check-label, .check-label { font-size: 14px; line-height: 1.9; gap: 12px; }
+.form-stack .check-label input { width: 17px; height: 17px; min-height: 0; margin-top: 5px; padding: 0; }
+.install-summary h3 { font-size: 24px; }
+.install-summary p { font-size: 14px; line-height: 1.8; }
+.install-summary .tag { font-size: 12px; }
+.install-plan h4 { font-size: 14px; line-height: 1.7; padding: 16px 19px; }
+.install-plan pre { font-size: 13px; line-height: 1.9; padding: 20px; max-height: 350px; }
+.player-detail-header p { font-size: 12px; line-height: 1.8; }
+.player-detail-header .text-button { font-size: 13px; }
+.detail-stat-grid { gap: 13px; }
+.detail-stat-grid > div { padding: 20px 15px; gap: 14px; }
+.detail-stat-grid span { font-size: 12px; }
+.detail-stat-grid strong { font-size: 15px; }
+.inventory-heading h3 { font-size: 17px; }
+.inventory-heading select { font-size: 14px; }
+.inventory-grid { gap: 7px; }
+.inventory-slot { min-height: 62px; }
+.inventory-slot > small { font-size: 12px; }
+.inventory-slot > b { font-size: 13px; }
+.inventory-item-label { font-size: 12px; max-width: 100%; }
+.slot-editor { padding: 20px; gap: 16px; }
+.slot-editor label { font-size: 13px; }
+.slot-editor input { font-size: 16px; }
+.confirm-detail strong { font-size: 18px; }
+.confirm-detail p { font-size: 14px; line-height: 1.8; }
+.confirm-detail span { font-size: 12px; }
+.notice { font-size: 14px; line-height: 1.9; padding: 17px 19px; gap: 12px; }
+.notice .text-button { font-size: 13px; }
+.empty-state strong { font-size: 17px; line-height: 1.7; }
+.empty-state p { font-size: 14px; line-height: 1.9; max-width: 500px; }
+.empty-state { padding: 60px 30px; gap: 17px; }
+.toast { font-size: 14px; line-height: 1.9; padding: 16px 19px; }
+.welcome-panel h2 { font-size: 32px; }
+.welcome-panel > p { font-size: 16px; line-height: 1.9; max-width: 600px; }
+.welcome-panel .button { font-size: 15px; min-height: 45px; }
+.auth-story { padding: 40px 48px 28px; }
+.auth-story-content > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .8px; }
+.auth-story h1 { font-size: clamp(46px,4.5vw,70px); line-height: 1.17; letter-spacing: -2px; }
+.auth-story-content > p { font-size: 16px; line-height: 1.9; }
+.auth-server-card { width: 100%; max-width: 500px; transform: none; }
+.auth-server-card-top { padding: 19px; }
+.auth-server-card-top > span:first-child { font-size: 16px; }
+.auth-server-card-top > .status { font-size: 12px; }
+.auth-terminal { font-size: 13px; padding: 24px 19px; line-height: 1.9; white-space: normal; gap: 17px; }
+.auth-terminal i { font-size: 12px; width: 27px; }
+.auth-card-bottom { font-size: 12px; line-height: 1.8; flex-wrap: wrap; padding: 17px 19px; gap: 14px; }
+.auth-story-footer, .auth-story-footer > span:last-child { font-size: 12px; }
+.auth-form-side { padding: 48px 38px 28px; }
+.auth-form-wrap { max-width: 450px; }
+.auth-form-wrap > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .6px; }
+.auth-form-wrap > h2 { font-size: 34px; line-height: 1.4; }
+.auth-form-wrap > p:first-of-type { font-size: 15px; line-height: 1.9; }
+.auth-tabs > button { font-size: 15px; padding: 12px 9px; }
+.auth-form-wrap .form-stack { gap: 24px; }
+.auth-form-wrap label { font-size: 14px; gap: 11px; }
+.auth-form-wrap .input-icon input { font-size: 16px; min-height: 48px; line-height: 1.5; padding: 12px 0; }
+.auth-form-wrap .auth-submit { font-size: 16px; min-height: 49px; }
+.connection-choice > button { font-size: 14px; min-height: 47px; padding: 12px 9px; gap: 8px; }
+.auth-or { font-size: 12px; margin: 28px 0 23px; }
+.demo-button { font-size: 16px; min-height: 48px; }
+.auth-note { font-size: 12px; line-height: 1.9; align-items: flex-start; gap: 9px; }
+.auth-form-footer { font-size: 12px; }
+.discovery-source { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; background: #1e231d; border: 1px solid #46523b; border-radius: 7px; padding: 20px 22px; margin-bottom: 23px; }
+.discovery-source > div { flex: 1; min-width: 210px; }
+.discovery-source h3 { font-size: 17px; line-height: 1.7; font-weight: 550; color: #c6d6bc; }
+.discovery-source p { font-size: 13px; color: #919e87; line-height: 1.9; margin-top: 7px; }
+.discovery-source code { font-size: 12px; color: #bdc9b2; overflow-wrap: anywhere; }
+.discovery-source > svg { margin-top: 4px; color: #a8bf93; }
+.discovery-warnings { padding: 16px 19px; border: 1px solid #58543e; border-radius: 6px; background: #29281d; }
+.discovery-warnings h4 { font-size: 14px; font-weight: 550; color: #c7bc91; line-height: 1.8; margin-bottom: 8px; }
+.discovery-warnings ul { margin: 0; padding-left: 20px; color: #a9a386; font-size: 13px; line-height: 1.9; }
+.discovery-summary { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 13px; }
+.discovery-summary > div { padding: 19px; border: 1px solid #414b39; border-radius: 6px; background: #22271f; min-width: 0; }
+.discovery-summary span { display: block; font-size: 13px; color: #96a38b; line-height: 1.8; }
+.discovery-summary strong { display: block; font-size: 23px; color: #d1dec6; margin-top: 9px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.discovery-summary small { display: block; font-size: 12px; color: #849578; line-height: 1.9; margin-top: 8px; }
+.discovery-mod-list { font-size: 13px; line-height: 1.9; color: #aab99e; background: #1c2118; padding: 17px 19px; border: 1px solid #414c36; border-radius: 6px; max-height: 180px; overflow: auto; }
+.discovery-mod-list strong { display: block; font-size: 15px; margin-bottom: 9px; color: #c9d9bc; }
+.discovery-mod-list p { font-size: 13px; line-height: 1.9; }
+.wizard-choice-intro { font-size: 15px; line-height: 1.9; color: #aab69e; margin-bottom: 5px; }
+.wizard-inline-status { font-size: 13px; line-height: 1.9; color: #91a77f; }
+@media (min-width:1700px) {
+ .stats-grid { grid-template-columns: repeat(4,minmax(0,1fr)); }
+ .dashboard-grid { grid-template-columns: minmax(0,1.45fr) minmax(350px,1fr); }
+ .details-content, .compact-player-list { display: block; }
+ .mods-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+
+@media (max-width:1250px) {
+ .page-actions { width: 100%; justify-content: flex-end; }
+ .settings-grid { grid-template-columns: 1fr; }
+ .access-settings { grid-column: auto; }
+ .topbar-right .connection-label { display: none; }
+ .mods-hero { flex-wrap: wrap; }
+ .mod-search { max-width: none; min-width: 240px; }
+ .server-bar-right { margin-left: auto; }
+ .auth-story, .auth-form-side { padding-left: 30px; padding-right: 30px; }
+ .auth-form-wrap > h2 { font-size: 30px; }
+}
+@media (max-width:1000px) {
+ main { padding: 27px 23px 0; }
+ .topbar { padding: 15px 23px; }
+ .page-title-row { flex-direction: row; }
+ .page-title-row > div:first-child { width: 100%; }
+ .page-title-row h1 { font-size: 34px; }
+ .page-actions { margin: 0; align-self: auto; justify-content: space-between; }
+ .page-description { font-size: 15px; max-width: none; }
+ .mods-grid { grid-template-columns: 1fr; }
+ .details-content, .compact-player-list { display: block; }
+ .compact-player:nth-last-child(2) { border-bottom: 1px solid #343d2d; }
+ .undo-info > .switch-label { margin-left: 0; justify-content: flex-end; width: 100%; }
+ .auth-story h1 { font-size: 45px; }
+ .auth-server-card-top { flex-wrap: wrap; gap: 9px; }
+ .connection-choice { flex-wrap: wrap; }
+ .connection-choice > button { flex-basis: 100%; }
+}
+@media (max-width:760px) {
+ .sidebar { width: 264px; padding: 30px 18px 0; }
+ .main-shell { margin-left: 0; }
+ .sidebar .brand strong { font-size: 34px; }
+ .sidebar .brand div > span { font-size: 12px; letter-spacing: .25px; }
+ .sidebar .nav-item { font-size: 15px; min-height: 50px; }
+ .sidebar .workspace-label, .sidebar .nav-label, .sidebar .workspace-label > span { font-size: 12px; }
+ .sidebar .workspace-card strong { font-size: 15px; }
+ .sidebar .workspace-card div > span { font-size: 12px; }
+ .sidebar .open-source > span { font-size: 12px; white-space: normal; }
+ .sidebar .open-source p { font-size: 21px; }
+ .sidebar .open-source a { font-size: 13px; }
+ .sidebar .account { margin-left: -18px; margin-right: -18px; padding-left: 18px; padding-right: 18px; }
+ .sidebar .account strong { font-size: 14px; }
+ .sidebar .account div > span { font-size: 12px; }
+ .topbar { min-height: 70px; padding: 13px 19px; }
+ .breadcrumbs { font-size: 12px; gap: 8px; }
+ .page-actions { width: 100%; flex-basis: 100%; gap: 11px; }
+ .page-actions .server-select { display: flex; flex: 1; max-width: 260px; }
+ .server-select select { font-size: 14px; max-width: none; }
+ .page-actions > .button { font-size: 14px; min-height: 45px; padding: 11px 13px; }
+ .server-bar-right { justify-content: flex-end; flex: 1; margin-left: 0; }
+ .server-bar-right > .button, .server-bar-right > .button.secondary { font-size: 13px; width: auto; height: auto; gap: 7px; padding: 9px 12px; min-height: 40px; }
+ .table-toolbar { padding: 19px; }
+ .table-toolbar > .search-input { max-width: none; flex-basis: 100%; }
+ .toolbar-right { justify-content: flex-start; }
+ .mods-grid { padding: 21px; grid-template-columns: 1fr; }
+ .mod-card-footer > .button { font-size: 14px; line-height: 1.7; white-space: normal; }
+ .mods-hero > .mods-hero-icon + div { flex-basis: calc(100% - 90px); }
+ .compatibility-badge { margin-left: 0; }
+ .undo-info > .switch-label { font-size: 14px; justify-content: flex-end; width: 100%; margin-left: 0; }
+ .modal-overlay { padding: 16px; }
+ .modal { padding: 27px 22px; max-height: calc(100vh - 32px); }
+ .modal-heading h2 { font-size: 25px; }
+ .form-stack input, .form-stack select, .form-stack textarea { font-size: 16px; min-height: 48px; }
+ .field-optional, .auth-form-wrap .field-optional { position: static; display: block; margin: 0; }
+ .setup-options { grid-template-columns: 1fr; }
+ .wizard-steps { gap: 11px; }
+ .wizard-steps > div { font-size: 13px; gap: 8px; }
+ .wizard-steps > div > span { width: 29px; height: 29px; }
+ .bridge-form > div:first-child { flex-wrap: wrap; }
+ .auth-story { padding: 30px 27px 0; }
+ .auth-story-content { display: block; padding: 35px 0; }
+ .auth-story-content > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .4px; white-space: normal; }
+ .auth-story h1 { font-size: 47px; line-height: 1.17; letter-spacing: -1.7px; }
+ .auth-story-content > p { display: block; font-size: 16px; line-height: 1.9; margin-top: 21px; }
+ .auth-server-card { display: none; }
+ .auth-form-side { padding: 37px 27px 28px; }
+ .auth-form-wrap { max-width: 500px; }
+ .auth-form-wrap > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .5px; }
+ .auth-form-wrap > h2 { font-size: 32px; }
+ .auth-form-wrap > p:first-of-type { font-size: 15px; }
+ .auth-form-wrap label { font-size: 14px; }
+ .auth-form-wrap .input-icon input { font-size: 16px; min-height: 49px; }
+ .auth-form-wrap .auth-submit { font-size: 16px; min-height: 49px; }
+ .auth-note { font-size: 12px; }
+}
+@media (max-width:480px) {
+ main { padding: 25px 16px 0; }
+ .topbar { padding: 13px 16px; }
+ .breadcrumbs > span, .breadcrumbs > svg:first-of-type { display: none; }
+ .page-title-row h1 { font-size: 32px; }
+ .page-actions .server-select { max-width: none; flex-basis: 100%; }
+ .page-actions > .button { margin-left: auto; }
+ .server-identity h2 { font-size: 18px; }
+ .server-bar-right { flex-basis: 100%; justify-content: space-between; gap: 8px; }
+ .server-bar-right > .status { margin-right: auto; font-size: 12px; }
+ .server-bar-right > .button, .server-bar-right > .button.secondary { font-size: 12px; padding: 9px 10px; min-height: 39px; }
+ .stats-grid { grid-template-columns: 1fr; gap: 16px; }
+ .stat-top > span { font-size: 15px; }
+ .stat-value > span { font-size: 15px; }
+ .stat-bottom > span:first-child { font-size: 13px; }
+ .panel-heading { padding: 19px 17px; }
+ .panel-heading .text-button { font-size: 12px; }
+ .panel-heading h3 { font-size: 16px; }
+ .console-lines { padding: 17px 13px; }
+ .console-line, .full-console .console-line { display: block; font-size: 13px; line-height: 1.9; margin-bottom: 10px; }
+ .console-time, .console-level { display: inline; margin-right: 10px; font-size: 12px; }
+ .console-line > span:last-child { display: block; }
+ .console-command kbd { display: none; }
+ .compact-player-list, .activity-preview { padding: 0 17px; }
+ .details-content { padding: 0 17px 23px; }
+ .overview-note > p { padding: 0; }
+ .chat-feed { padding: 23px 17px; }
+ .chat-message { gap: 11px; }
+ .chat-message-content > p { font-size: 15px; }
+ .chat-compose { margin-left: 16px; margin-right: 16px; gap: 9px; flex-wrap: wrap; }
+ .chat-compose input { font-size: 16px; min-width: 120px; }
+ .compose-prefix { font-size: 0; gap: 0; padding-right: 8px; }
+ .chat-compose > .button { font-size: 14px; gap: 7px; padding: 10px 12px; min-height: 43px; margin-left: auto; }
+ .mods-hero h2 { font-size: 24px; }
+ .mods-grid { padding: 18px; }
+ .mod-card-footer { flex-direction: column; gap: 15px; }
+ .mod-card-footer > .button { align-self: stretch; text-align: center; justify-content: center; }
+ .provider-toolbar { padding: 17px 18px; }
+ .provider-unavailable { margin: 18px; padding: 20px; flex-wrap: wrap; }
+ .settings-card > .form-stack { padding: 23px 18px; }
+ .form-grid { grid-template-columns: 1fr; }
+ .form-grid.wide-first { grid-template-columns: 3fr 1fr; gap: 13px; }
+ .modal-overlay { padding: 11px; }
+ .modal { padding: 25px 19px; max-height: calc(100vh - 22px); }
+ .modal-heading h2 { font-size: 24px; }
+ .wizard-steps > div { font-size: 12px; gap: 7px; }
+ .wizard-steps > div > span { width: 27px; height: 27px; }
+ .wizard-steps > div > i { margin-left: 4px; }
+ .game-options { grid-template-columns: 1fr 1fr; }
+ .game-options > button { flex-direction: row; justify-content: center; padding: 20px 11px; min-height: 75px; }
+ .game-options strong { font-size: 14px; }
+ .discovery-summary { grid-template-columns: 1fr; }
+ .discovery-summary strong { font-size: 25px; }
+ .discovery-summary span { font-size: 14px; }
+ .bridge-form { padding: 21px 17px; }
+ .bridge-form .tag { margin-left: 0; }
+ .redeem-form > div, .invite-list > div { flex-wrap: wrap; }
+ .redeem-form input { flex-basis: 100%; }
+ .redeem-form .button, .invite-list .button { margin-left: auto; }
+ .player-detail-header { flex-wrap: wrap; }
+ .detail-stat-grid { grid-template-columns: 1fr 1fr; }
+ .inventory-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
+ .inventory-slot { min-height: 73px; }
+ .slot-editor { grid-template-columns: 1fr; }
+ .auth-story h1 { font-size: 44px; line-height: 1.18; white-space: normal; }
+ .auth-story-content > p { font-size: 15px; }
+ .auth-form-wrap > h2 { font-size: 30px; }
+ .connection-choice > button { flex-basis: 100%; font-size: 14px; }
+ .toast { max-width: calc(100vw - 24px); padding: 16px; }
+}
+
+/* Comfortable copy and controls across every view, including narrow screens. */
+.main-shell, main, .panel, .server-identity, .server-identity > div, .mod-card, .chat-message-content { min-width: 0; }
+.page-description, .mods-hero p, .mod-card > p, .setting-description p, .modal-heading p, .permission-note p, .bridge-form p, .empty-state p, .auth-form-wrap > p:first-of-type { font-size: 16px; line-height: 1.8; }
+.search-input input, .select-wrap > select, .form-select, .console-command input, .full-console .console-command input, .generated-code input:read-only, .redeem-form input, .slot-editor input { font-size: 16px; }
+.mod-card > p.mod-install-reason { font-size: 14px; min-height: 0; }
+.discovery-panel { margin-bottom: 25px; }
+.discovery-panel-body { padding: 23px; display: grid; gap: 18px; }
+.discovery-summary span { font-size: 14px; }
+.discovery-mod-list, .discovery-warnings, .discovery-warnings li { font-size: 14px; line-height: 1.8; }
+.server-identity .address-copy span, .mod-card h3, .mod-card p, .discovery-mod-list p, .permission-note p { overflow-wrap: anywhere; }
+.mods-hero { flex-wrap: wrap; }
+.mod-search { min-width: 0; flex-wrap: wrap; }
+.mod-search .search-input { min-width: 0; flex: 1; }
+.button-row { flex-wrap: wrap; }
+.server-bar-right .status { white-space: normal; }
+@media (max-width: 640px) {
+ .discovery-panel-body { padding: 18px; }
+ .page-description, .mods-hero p, .mod-card > p, .setting-description p, .modal-heading p, .permission-note p, .bridge-form p, .empty-state p, .auth-form-wrap > p:first-of-type { font-size: 16px; }
+ .mod-card > p.mod-install-reason { font-size: 14px; }
+ .mods-hero > .mods-hero-icon + div { flex-basis: 100%; }
+ .mod-search { width: 100%; max-width: none; }
+ .mod-search .search-input { width: 100%; }
+}
+
+.status.unknown { color: #c8bc91; background: #2b291f; }
+.status.unknown .status-dot { background: #c8bc91; }

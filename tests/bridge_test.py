@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import hashlib
 import os
 from pathlib import Path
 import tempfile
@@ -107,6 +108,85 @@ class BridgeTests(unittest.TestCase):
                 server.shutdown()
                 server.server_close()
                 thread.join(timeout=2)
+
+    def graph_record(self, project, dependencies=()):
+        return {"id": "modrinth:" + project, "projectId": project, "name": project, "version": "1", "versionId": "v-" + project, "filename": project + ".jar", "hashAlgorithm": "sha512", "hash": hashlib.sha512(project.encode()).hexdigest(), "provider": "modrinth", "url": "https://cdn.modrinth.com/" + project, "managed": True, "dependencyRefs": list(dependencies)}
+
+    def test_required_dependencies_auto_install_in_single_transaction(self):
+        def resolve(project, version):
+            return self.graph_record(project, [("library", None)] if project == "main" else [])
+        def download(record, target, budget):
+            target.write_bytes(record["projectId"].encode())
+        with patch.object(bridge, "_resolve_modrinth", side_effect=resolve), patch.object(bridge, "_download_artifact", side_effect=download):
+            result = bridge.install_mod({"projectId": "main"})
+        self.assertEqual(len(result["installed"]), 2)
+        self.assertTrue((Path(self.temp.name) / "plugins/main.jar").exists())
+        self.assertTrue((Path(self.temp.name) / "plugins/library.jar").exists())
+        self.assertEqual(bridge.registry()["modrinth:main"]["dependencies"], ["modrinth:library"])
+        with self.assertRaisesRegex(bridge.BridgeError, "bağımlı"):
+            bridge.delete_mod("modrinth:library")
+
+    def test_failed_dependency_verification_commits_nothing(self):
+        def resolve(project, version):
+            return self.graph_record(project, [("library", None)] if project == "main" else [])
+        def download(record, target, budget):
+            if record["projectId"] == "library":
+                raise bridge.BridgeError("dosya özeti eşleşmiyor")
+            target.write_bytes(b"main")
+        with patch.object(bridge, "_resolve_modrinth", side_effect=resolve), patch.object(bridge, "_download_artifact", side_effect=download):
+            with self.assertRaisesRegex(bridge.BridgeError, "özeti"):
+                bridge.install_mod({"projectId": "main"})
+        self.assertFalse(list(Path(self.temp.name).glob("plugins/*.jar")))
+        self.assertFalse((Path(self.temp.name) / ".ssp-mods.json").exists())
+        self.assertFalse(list(Path(self.temp.name).glob(".ssp-stage-*")))
+
+    def test_commit_failure_rolls_back_every_new_jar(self):
+        original_link = bridge.os.link
+        calls = []
+        def link(source, destination):
+            calls.append(destination)
+            if len(calls) == 2:
+                raise OSError("fixture write failure")
+            original_link(source, destination)
+        with patch.object(bridge, "_resolve_modrinth", side_effect=lambda project, version: self.graph_record(project, [("dep", None)] if project == "main" else [])), patch.object(bridge, "_download_artifact", side_effect=lambda record, target, budget: target.write_bytes(b"jar")), patch.object(bridge.os, "link", side_effect=link):
+            with self.assertRaisesRegex(bridge.BridgeError, "geri alındı"):
+                bridge.install_mod({"projectId": "main"})
+        self.assertEqual(len(calls), 2)
+        self.assertFalse(list(Path(self.temp.name).glob("plugins/*.jar")))
+        self.assertFalse((Path(self.temp.name) / ".ssp-mods.json").exists())
+
+    def test_server_started_during_download_blocks_commit(self):
+        with patch.object(bridge, "ensure_stopped", side_effect=[None, bridge.BridgeError("server started", 409)]), patch.object(bridge, "_resolve_modrinth", return_value=self.graph_record("main")), patch.object(bridge, "_download_artifact", side_effect=lambda record, target, budget: target.write_bytes(b"jar")):
+            with self.assertRaisesRegex(bridge.BridgeError, "server started"):
+                bridge.install_mod({"projectId": "main"})
+        self.assertFalse(list(Path(self.temp.name).glob("plugins/*.jar")))
+
+    def test_curseforge_author_denial_and_missing_download_url_are_respected(self):
+        with patch.object(bridge, "LOADER", "neoforge"), patch.object(bridge, "curseforge", return_value={"id": 123, "allowModDistribution": False}):
+            with self.assertRaisesRegex(bridge.BridgeError, "dağıtımını kapatmış"):
+                bridge._resolve_curseforge("123", None, "PRIVATE_KEY")
+        project = {"id": 123, "gameId": 432, "classId": 6, "name": "Example", "allowModDistribution": True}
+        file = {"id": 456, "modId": 123, "releaseType": 1, "gameVersions": [bridge.VERSION, "NeoForge"], "downloadUrl": None}
+        with patch.object(bridge, "LOADER", "neoforge"), patch.object(bridge, "curseforge", side_effect=[project, [file]]):
+            with self.assertRaisesRegex(bridge.BridgeError, "indirmeye kapalı"):
+                bridge._resolve_curseforge("123", None, "PRIVATE_KEY")
+
+    def test_curseforge_key_never_enters_registry_or_result(self):
+        key = "PRIVATE_CURSEFORGE_KEY"
+        record = self.graph_record("123")
+        record.update(id="curseforge:123", provider="curseforge", hashAlgorithm="sha1", hash="a" * 40)
+        with patch.object(bridge, "_resolve_curseforge", return_value=record) as resolver, patch.object(bridge, "_download_artifact", side_effect=lambda record, target, budget: target.write_bytes(b"jar")):
+            result = bridge.install_mod({"provider": "curseforge", "projectId": "123", "apiKey": key})
+        resolver.assert_called_once_with("123", None, key)
+        self.assertNotIn(key, json.dumps(result))
+        self.assertNotIn(key, (Path(self.temp.name) / ".ssp-mods.json").read_text())
+        self.assertNotIn(key, json.dumps(list(bridge.LOGS)))
+
+    def test_cdn_redirect_cannot_leave_provider_domain(self):
+        self.assertTrue(bridge.allowed_cdn("https://edge.forgecdn.net/files/a.jar", "curseforge"))
+        self.assertFalse(bridge.allowed_cdn("https://forgecdn.net.evil.example/a.jar", "curseforge"))
+        with self.assertRaisesRegex(bridge.BridgeError, "yönlendirmesi"):
+            bridge.CDNRedirect("curseforge").redirect_request(None, None, 302, "", {}, "https://evil.example/a.jar")
 
 
 if __name__ == "__main__":

@@ -1,13 +1,14 @@
 # Doğrulama
 
-Bu ilk sürüm Node.js 24, Python 3.11 ve Java 21 hedefiyle derlendi.
+SSP v0.2.0 Node.js 24 ve Python 3.11 ile doğrulandı. Paper eklentisi önceki sürümde Java 21 hedefiyle derlendi; eklenti kaynakları bu sürümde değişmedi.
 
-- `npm test`: 18 test; kimlik doğrulama, CSRF, sunucu üyeliği, yetkiler, davetler, saklama süresi, envanter özel verileri, geri alma çakışmaları, SSH parmak izi ve gerçekten SSH kanalından geçen HTTP isteği.
-- `python -m unittest discover -s tests -p bridge_test.py -v`: 7 test; kimlik doğrulama, komut sınırları, dosya güvenliği, mod kaldırma karantinası ve gerçek bir test sürecini başlatma/komut gönderme/düzgün kapatma.
-- `npm run build`: TypeScript doğrulaması, Vite üretim arayüzü ve Node sunucu derlemesi.
-- `mvn -B -f bridge/paper/pom.xml package`: Paper API 1.21.4 üzerinde Java 21 hedefli JAR üretimi.
-- `npm audit`: kurulum sırasında bilinen bağımlılık açığı bulunmadı.
+- `npm test`: 32 test. Oturum/yetkiler, CSRF, davetler, geri alma, özel eşya verisi, katalog sağlayıcıları, CurseForge anahtarları ve indirme izinleri, NeoForge sürüm/özet doğrulaması, hazır sunucu içe aktarımının kurulum planını atlaması, SSH üzerinden stdin veri aktarımı.
+- `python -m unittest discover -s tests -p '*_test.py' -v`: 26 test. Keşfin oyun dosyalarını değiştirmemesi, Minecraft durum protokolü, oyuncu geçmişi, mod ve zorunlu bağımlılıklarının tek işlemde hazırlanması, dosya özetleri, hata halinde yeni dosyaları geri alma, mevcut modun ikinci kopyasını engelleme, süreç ve dosya güvenliği. Sembolik bağlantı testi Windows izin farkı nedeniyle yerelde atlanır; Linux GitHub Actions üzerinde çalışır.
+- `npm run build`: TypeScript kontrolü, Vite üretim arayüzü ve Node sunucusu derlemesi.
+- `mvn -B -f bridge/paper/pom.xml package`: Paper API 1.21.4 için Java 21 hedefli eklenti.
 
-Üretim derlemesi Edge/Chromium üzerinde 1440 px masaüstü ve 390 px mobil görünümde kontrol edildi. Demo ortamında oyuncu arama, çanta envanterini düzenleyip geri alma, 48 karakterli davet oluşturma/iptal etme, fısıltı/komut filtreleri, sunucu değiştirme/güç işlemi ve sunucu ekleme sihirbazı denendi. Tarayıcı JavaScript hatası ve sayfa taşması görülmedi.
+Gerçek Modrinth API'sinden Fabric, NeoForge ve Paper katalogları sorgulandı. Ayrı bir test dizinine gerçek Waystones, Fabric API ve Balm dosyaları tek kurulum çağrısıyla indirilip resmi özetleri doğrulandı; oyun başlatılmadı. NeoForge 1.21.1 için resmi Maven metadata ve SHA512 dosyası sorgulanarak uyumlu dağıtım çözüldü; gerçek uzak kurulum çalıştırılmadı. CurseForge canlı API anahtarı sağlanmadığı için sağlayıcının başlık, sürüm/yükleyici filtresi, izin ve dosya kuralları kontrollü API yanıtlarıyla test edildi.
 
-Canlı SSH sunucusu veya gerçek oyun dünyası sağlanmadığı için gerçek uzak kurulum ve oyun içi davranış uçtan uca denenmedi. Docker dosyaları hazırlandı; yerelde Docker daemon bulunmadığından imaj derlemesi çalıştırılmadı. Bir çanta sağlayıcısının varlığı, bütün Fabric/Forge modlarının desteklendiği anlamına gelmez; destek matrisi [BRIDGE.md](BRIDGE.md) dosyasındadır.
+Masaüstü (1440 px) ve mobil (390 px) arayüz Edge/Chromium ile kontrol edildi. Ana metin 16 px, menü metni 15 px olarak ölçüldü; CurseForge eksik anahtar durumu, NeoForge seçimi ve mevcut sunucuda kurulum ekranını atlama akışı geçti. Sayfa taşması ve JavaScript hatası görülmedi. Hazır sunucu sihirbazında SSH keşfi ve içe aktarım ekranı kontrollü yanıtlarla doğrulanır; bu, canlı bir oyun sunucusunda test yapıldığı anlamına gelmez. SSH aktarımı ayrıca yerel gerçek SSH protokol test sunucusuyla denetlenir.
+
+Canlı uzak sunucu veya oyun dünyası sağlanmadı. Docker daemon yerelde bulunmadığından imaj derlemesi çalıştırılmadı. Fabric/Forge/NeoForge sohbet ve canlı envanter için uygun oyun sağlayıcısı gerekir; destek matrisi [BRIDGE.md](BRIDGE.md) içindedir.

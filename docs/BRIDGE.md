@@ -211,3 +211,9 @@ denetler. `python -m unittest discover -s tests -p bridge_test.py -v` köprü
 kimlik doğrulama/dosya güvenliği davranışlarını sınar. Maven derlemesi Paper API
 uyumluluğunu denetler. Canlı uzak dünya ve üçüncü taraf modlarla uçtan uca oyun
 testi, gerçek sunucu/eklenti kurulumu gerektirir.
+
+## v0.2 mod ve keşif akışı
+
+Mod kataloğu Modrinth ve CurseForge kaynaklarını destekler. Zorunlu bağımlılıklar sınırlı bir grafik olarak çözülür; tüm indirilen dosyalar doğrulanıp sahneleme tamamlandıktan sonra oyun dizinine eklenir. Aynı yükleyici kimliğine sahip elle kurulmuş başka bir dosya varsa ikinci kopya yazılmaz. CurseForge anahtarı yalnız yetkili API başlığına gider; kayıt dosyasına veya mod sonucuna eklenmez.
+
+Mevcut kurulumlarda `discover.py` salt okunur anlık bilgi toplar. `one_shot.py` yalnız kullanıcının istediği mod yükleme/kaldırma işlemi için SSH üzerinden çalışır; oyun kurulumu veya kalıcı daemon gerekmez. Oyunun durduğu doğrulanmalıdır. Mod dosyalarının listelenmesi, oyun tarafından gerçekten yüklenmiş oldukları anlamına gelmez. [Ayrıntılar](MODS.md).

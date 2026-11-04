@@ -18,6 +18,8 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/build-server ./build-server
 COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/bridge/ssp_bridge.py ./bridge/ssp_bridge.py
+COPY --from=build --chown=node:node /app/bridge/discover.py ./bridge/discover.py
+COPY --from=build --chown=node:node /app/bridge/one_shot.py ./bridge/one_shot.py
 COPY --from=paper-bridge --chown=node:node /bridge/target/ssp-paper-bridge-0.1.0.jar ./bridge/paper/target/ssp-paper-bridge-0.1.0.jar
 RUN mkdir /app/data && chown node:node /app/data
 USER node
@@ -25,5 +27,3 @@ VOLUME ["/app/data"]
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s CMD node -e "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "build-server/index.js"]
-
-

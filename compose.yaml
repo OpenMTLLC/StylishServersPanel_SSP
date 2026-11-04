@@ -10,6 +10,7 @@ services:
       SSP_PORT: 3001
       SSP_DATA_DIR: /app/data
       SSP_SECURE_COOKIE: "false"
+      SSP_CURSEFORGE_API_KEY: "${SSP_CURSEFORGE_API_KEY:-}"
     volumes:
       - ssp-data:/app/data
 volumes:

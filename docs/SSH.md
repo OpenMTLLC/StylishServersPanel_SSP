@@ -88,3 +88,13 @@ TLS doğrulamalı bir HTTPS köprüsüdür. Uzak düz HTTP kabul edilmez.
 - [Fabric sunucu launcher](https://fabricmc.net/use/server/)
 - [Fabric Meta API](https://github.com/FabricMC/fabric-meta/blob/master/README.md)
 - [Minecraft EULA](https://www.minecraft.net/eula)
+
+## Hazır kurulu Minecraft sunucusu
+
+Yeni bağlantıda önce mevcut sunucu seçilir. Bağımsız doğrulanmış SSH parmak iziyle `bridge/discover.py` kodu standart girdiden verilen seçeneklerle tek sefer çalışır. Ana dizinde sınırlı tarama yapar veya seçilen mutlak dizini okur; oyun başlatmaz, Java kurmaz, EULA değiştirmez ve sunucu dosyalarını yeniden oluşturmaz. RAM, JVM bellek sınırı, disk, süreç/durum protokolü, oyuncu geçmişi ve JAR metadata verilerini ayrı kaynaklar olarak raporlar.
+
+Kayıtların geçmiş kaynağı yoksa oyuncu toplamı sıfır uydurulmaz. Dünya geçmişi varsa benzersiz UUID'ler kullanılır; yoksa varsa önbellek kaynağı ayrıca belirtilir. Tarama izni veya durum protokolü yetersizse açık/kapalı durumu bilinmiyor kalır. Bu anlık görüntü panelde Yeniden tara ile yenilenir; oyun içi sohbet ve envanter sağlayıcısının yerini almaz.
+
+NeoForge yeni kurulumda resmi Maven metadata dosyasından Minecraft sürümüne uygun kararlı yükleyici seçilir. Installer SHA512 özeti doğrulanır, `--installServer` çalıştırılır ve gerçek `unix_args.txt` ile başlatıcı oluşturulur. Bu adımlar mevcut sunucu içe aktarımında çalışmaz. [Resmi NeoForge kurulumu](https://docs.neoforged.net/user/docs/server/).
+
+Modrinth/CurseForge katalogları, zorunlu bağımlılıklar ve hazır sunucuda kalıcı köprü gerektirmeyen mod görevi için [MODS.md](MODS.md) belgesine bakın.
