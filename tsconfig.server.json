@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": false, "outDir": "build-server", "rootDir": "server", "module": "NodeNext", "moduleResolution": "NodeNext", "declaration": false, "sourceMap": false },
+  "include": ["server/**/*.ts"],
+  "exclude": ["tests", "src"]
+}

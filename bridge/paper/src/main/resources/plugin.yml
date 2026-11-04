@@ -1,0 +1,7 @@
+name: SSPBridge
+version: 0.1.0
+main: dev.ssp.bridge.SSPBridgePlugin
+api-version: '1.21'
+description: Authenticated local SSP player, chat and inventory provider
+author: SSP Contributors
+load: POSTWORLD

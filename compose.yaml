@@ -1,0 +1,16 @@
+services:
+  ssp:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"
+    environment:
+      NODE_ENV: production
+      SSP_HOST: 0.0.0.0
+      SSP_PORT: 3001
+      SSP_DATA_DIR: /app/data
+      SSP_SECURE_COOKIE: "false"
+    volumes:
+      - ssp-data:/app/data
+volumes:
+  ssp-data:

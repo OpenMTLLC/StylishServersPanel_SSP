@@ -1,0 +1,10 @@
+# Bind is intentionally fixed to 127.0.0.1. Use the SSH/process bridge externally.
+port: 8787
+# Set this to the same value as SSP_PROVIDER_TOKEN in the process bridge.
+# A blank value creates a new key in this file; it is never printed in logs.
+token: ''
+# Optional permissions-plugin commands. {uuid} and {name} are validated players.
+# Example with LuckPerms: 'lp user {uuid} parent set moderator'
+moderator-command: ''
+# Configure this too if a permissions plugin owns the default role.
+player-command: ''

@@ -1,0 +1,11 @@
+.git
+node_modules
+data
+dist
+build-server
+.env
+.env.*
+.firecrawl
+.openai
+.tools
+bridge/**/target
