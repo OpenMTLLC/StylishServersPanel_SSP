@@ -24,8 +24,7 @@ standart TLS sertifika doğrulaması korunur.
 
 ## Kurulum
 
-Otomatik sunucu kurulumunda süreç köprüsü de kurulup başlatılır. Paper JAR
-otomatik yüklemesi için paneli çalıştırmadan önce yerel repoda:
+Mevcut sunucuyu oyun içi sağlayıcıya bağlamak için Paper JAR dosyasını hazırlayın:
 
 ```sh
 mvn -B -f bridge/paper/pom.xml package
@@ -77,14 +76,13 @@ player-command: ''
 
 Token boşsa eklenti yeni tokenı dosyada üretir, günlüğe yazmaz. Python sağlayıcı
 anahtarıyla aynı değeri ayarlayın; dosyayı yalnız oyun kullanıcısı okuyabilsin.
-Panelde SSH kimlik bilgilerini, doğrulanmış parmak izini ve süreç köprüsü
-anahtarını girin. Köprü portu otomatik kurulumda her sunucu için atanır; manuel
-kurulumda varsayılan `8765` kullanılır. Bir makinedeki her sunucunun süreç ve
+Panelde SSH kimlik bilgilerini ve doğrulanmış parmak izini girin; süreç köprüsü
+anahtarını Ayarlar bölümünde ekleyin. Köprü portunun varsayılanı `8765`'tir.
+Bir makinedeki her sunucunun süreç ve
 oyuncu köprüsü portları farklı olmalıdır.
 
 ## Kalıcı servis
 
-Otomatik bootstrap `nohup` kullanır; makine yeniden başlatılınca başlatılmaz.
 Yönetici olarak kalıcı servis isterseniz köprüyü ayrı kullanıcıyla systemd altında
 çalıştırın. Aşağıdaki yolları/kullanıcıyı gerçek değerlerle değiştirin:
 

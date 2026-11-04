@@ -6,4 +6,4 @@ Paneli varsayılan loopback arayüzünde çalıştırın. İnternete açarken HT
 
 Oyun sunucusu için kısıtlı bir işletim sistemi hesabı kullanın. Oyun köprüsünü herkese açık ağa bağlamayın; SSH tüneli üzerinden erişin. Modlar ve eklentiler sunucuda kod çalıştırır; yalnızca güvendiğiniz projeleri yükleyin.
 
-Bilinen kapsam: demo verisi gerçek oyun bağlantısı değildir; gerçek mod çantası desteği oyuna özel sağlayıcı gerektirir. SSP ilk sürümdür, bağımsız güvenlik denetiminden geçtiği iddia edilmez.
+Özel erişim sekmeleri ve işlem yetkileri API'de uygulanır. Erişim kodu yöneticisi kendi yetkilerinden fazlasını veremez; kod iptali ilişkili üyeliği kaldırır. Gerçek mod çantası desteği oyuna özel sağlayıcı gerektirir. SSP bağımsız güvenlik denetiminden geçtiğini iddia etmez.

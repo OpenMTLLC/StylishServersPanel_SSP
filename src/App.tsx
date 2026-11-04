@@ -1,178 +1,494 @@
+import AuthScreen from './AuthScreen';
+import PlayersPanel from './PlayersPanel';
+import ActivityLedger from './ActivityLedger';
+import SettingsPanel from './SettingsPanel';
+import BinaryBackground, { PreferencesControls } from './Preferences';
+import { usePreferences, t, locale } from './i18n';
 import ServerWizard from './ServerWizard';
 import ModsCatalog from './ModsCatalog';
 import DiscoverySummary, { measured, type DiscoveredServer } from './DiscoverySummary';
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Activity, ArrowDown, ArrowDownLeft, ArrowRight, ArrowUpRight, Ban, Box, Boxes, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Command, Copy, Cpu, Database, Download, Ellipsis, ExternalLink, Eye, FileClock, Fingerprint, Gamepad2, HardDrive, Hash, KeyRound, LayoutDashboard, Link2, LoaderCircle, LockKeyhole, LogOut, MemoryStick, Menu, MessageSquare, MoreHorizontal, Package, Play, Plus, Power, RefreshCw, Search, Send, Server, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, Terminal, Trash2, Undo2, Users, Wifi, X, Zap } from 'lucide-react';
-
-type User = { id: string; username: string };
-type Session = { user: User; csrfToken: string; serverId?: string };
+import { Activity, ArrowDown, ArrowDownLeft, ArrowRight, ArrowUpRight, Ban, Box, Boxes, Check, CheckCheck, ChevronDown, ChevronRight, CircleHelp, Clock3, Command, Copy, Cpu, Database, Download, Ellipsis, ExternalLink, Eye, FileClock, Fingerprint, Gamepad2, HardDrive, Hash, KeyRound, LayoutDashboard, Link2, LoaderCircle, LockKeyhole, LogOut, MemoryStick, Menu, MessageSquare, MoreHorizontal, Package, Play, Plus, Power, RefreshCw, Search, Send, Server, Settings2, Shield, ShieldCheck, SlidersHorizontal, Sparkles, Square, Terminal, Trash2, Undo2, Users, Wifi, X, Zap } from './icons';
+type User = {
+    id: string;
+    username: string;
+};
+type Session = {
+    user: User;
+    csrfToken: string;
+    serverId?: string;
+};
 type Game = 'minecraft' | 'valheim' | 'terraria' | 'rust';
-type ServerInfo = { id: string; name: string; game: Game; edition: string; version: string; status: string; address: string; maxPlayers: number; demo: boolean; permissions: string; connection?: { host: string; port: number; username: string }; retentionDays: number; undoEnabled: boolean; bridgeConfigured?: boolean; bridgePort?: number; curseforgeConfigured?: boolean; directory?: string };
-type Player = { uuid: string; name: string; ping: number; playTime: number; online: boolean; role: string; banned: boolean };
-type ChatMessage = { id: string; player: string; recipient?: string; type: string; message: string; timestamp: string };
-type Mod = { id: string; name: string; version: string; author: string; description: string; enabled: boolean; downloads?: number; slug?: string; projectId?: string; icon_url?: string; title?: string; project_id?: string; provider?: string; url?: string; installable?: boolean; compatible?: boolean; reason?: string; managed?: boolean };
-type Audit = { id: string; actor: string; action: string; detail: string; timestamp: string; reversible: boolean; undone: boolean; canUndo: boolean };
-type Slot = { slot: number; item: string; count: number; icon?: string; data?: string };
-type Inventory = { provider: string; slots: Slot[]; capacity: number; writable: boolean };
-type Provider = { id: string; name: string; label?: string; capacity: number; writable: boolean; mod?: string };
-type ConsoleLine = { timestamp: string; level: string; message: string };
-type Metrics = { machineMemoryTotal?: number; allocatedMemoryMb?: number | null; cpu: number; memory: number; memoryTotal: number; disk: number; diskTotal: number; tps: number; uptime: number; networkIn: number; networkOut: number };
-type ServerData = { server: ServerInfo; players: Player[]; chat: ChatMessage[]; mods: Mod[]; activity: Audit[]; metrics: Metrics | null; console: ConsoleLine[]; inventoryProviders: Provider[]; discovery?: DiscoveredServer & { observedAt?: string; source?: string };  playerCounts?: { online: number | null; total: number | null }; bridgeConnected?: boolean; source?: string; observedAt?: string };
+type ServerInfo = {
+    id: string;
+    name: string;
+    game: Game;
+    edition: string;
+    version: string;
+    status: string;
+    address: string;
+    maxPlayers: number;
+    permissions: string;
+    access: {
+        tabs: Tab[];
+        actions: string[];
+    };
+    connection?: {
+        type?: string;
+        url?: string;
+        host: string;
+        port: number;
+        username: string;
+    };
+    retentionDays: number;
+    undoEnabled: boolean;
+    bridgeConfigured?: boolean;
+    bridgePort?: number;
+    curseforgeConfigured?: boolean;
+    directory?: string;
+};
+type Player = {
+    uuid: string;
+    name: string;
+    ping: number;
+    playTime: number;
+    online: boolean;
+    role: string;
+    banned: boolean;
+};
+type ChatMessage = {
+    id: string;
+    player: string;
+    recipient?: string;
+    type: string;
+    message: string;
+    timestamp: string;
+};
+type Mod = {
+    id: string;
+    name: string;
+    version: string;
+    author: string;
+    description: string;
+    enabled: boolean;
+    downloads?: number;
+    slug?: string;
+    projectId?: string;
+    icon_url?: string;
+    title?: string;
+    project_id?: string;
+    provider?: string;
+    url?: string;
+    installable?: boolean;
+    compatible?: boolean;
+    reason?: string;
+    managed?: boolean;
+};
+type Audit = {
+    id: string;
+    actor: string;
+    action: string;
+    detail: string;
+    timestamp: string;
+    reversible: boolean;
+    undone: boolean;
+    canUndo: boolean;
+};
+type Slot = {
+    slot: number;
+    item: string;
+    count: number;
+    icon?: string;
+    data?: string;
+};
+type Inventory = {
+    provider: string;
+    slots: Slot[];
+    capacity: number;
+    writable: boolean;
+};
+type Provider = {
+    id: string;
+    name: string;
+    label?: string;
+    capacity: number;
+    writable: boolean;
+    mod?: string;
+};
+type ConsoleLine = {
+    timestamp: string;
+    level: string;
+    message: string;
+};
+type Metrics = {
+    machineMemoryTotal?: number;
+    allocatedMemoryMb?: number | null;
+    cpu: number;
+    memory: number;
+    memoryTotal: number;
+    disk: number;
+    diskTotal: number;
+    tps: number;
+    uptime: number;
+    networkIn: number;
+    networkOut: number;
+};
+type ServerData = {
+    server: ServerInfo;
+    players: Player[];
+    chat: ChatMessage[];
+    mods: Mod[];
+    activity: Audit[];
+    metrics: Metrics | null;
+    console: ConsoleLine[];
+    inventoryProviders: Provider[];
+    discovery?: DiscoveredServer & {
+        observedAt?: string;
+        source?: string;
+    };
+    playerCounts?: {
+        online: number | null;
+        total: number | null;
+    };
+    bridgeConnected?: boolean;
+    source?: string;
+    observedAt?: string;
+};
 type Tab = 'overview' | 'console' | 'players' | 'chat' | 'mods' | 'activity' | 'settings';
-type Toast = { message: string; error?: boolean };
-type Invite = { id: string; role: string; expires: string; revoked?: boolean; redeemed?: boolean };
+type Toast = {
+    message: string;
+    error?: boolean;
+};
+type Invite = {
+    id: string;
+    role: string;
+    expires: string;
+    revoked?: boolean;
+    redeemed?: boolean;
+};
 const gameNames: Record<Game, string> = { minecraft: 'Minecraft', valheim: 'Valheim', terraria: 'Terraria', rust: 'Rust' };
 const tabNames: Record<Tab, string> = { overview: 'Genel Bakış', console: 'Konsol', players: 'Oyuncular', chat: 'Sohbet', mods: 'Modlar', activity: 'İşlemler', settings: 'Ayarlar' };
 const navItems = [{ id: 'overview', icon: LayoutDashboard }, { id: 'console', icon: Terminal }, { id: 'players', icon: Users }, { id: 'chat', icon: MessageSquare }, { id: 'mods', icon: Boxes }, { id: 'activity', icon: FileClock }, { id: 'settings', icon: Settings2 }] as const;
-const time = (value: string) => new Date(value).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-const date = (value: string) => new Date(value).toLocaleString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-const duration = (seconds: number) => seconds >= 3600 ? `${Math.floor(seconds / 3600)} sa ${Math.floor((seconds % 3600) / 60)} dk` : `${Math.floor(seconds / 60)} dk`;
-const number = (value: number) => Number(value || 0).toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+const time = (value: string) => new Date(value).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+const date = (value: string) => new Date(value).toLocaleString(locale(), { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+const duration = (seconds: number) => t("{hours} sa {minutes} dk", { hours: Math.floor(seconds / 3600), minutes: Math.floor(seconds % 3600 / 60) });
+const number = (value: number) => Number(value || 0).toLocaleString(locale(), { maximumFractionDigits: 1 });
 const capitalize = (value: string) => value?.charAt(0).toUpperCase() + value?.slice(1);
-
-function Mark({ small = false }: { small?: boolean }) { return <span className={`brand-mark ${small ? 'small' : ''}`} aria-hidden="true"><svg width="27" height="29" viewBox="0 0 27 29"><path d="M2 5L13.5 0 25 5v7l-11.5 5L2 12V5Zm0 12 11.5 5L25 17v7l-11.5 5L2 24v-7Z" fill="currentColor"/><path d="m13.5 7 6.5 3-6.5 3L7 10l6.5-3Z" fill="#111411"/></svg></span>; }
-function Status({ online, label }: { online: boolean; label?: string }) { return <span className={`status ${label === 'Durum doğrulanamadı' ? 'unknown' : online ? 'online' : 'offline'}`}><span className="status-dot"/>{label ?? (online ? 'Çevrimiçi' : 'Çevrimdışı')}</span>; }
-function Avatar({ name, size = '' }: { name: string; size?: string }) { const colors = ['sage', 'sand', 'blue', 'rose', 'lilac']; const color = colors[(name?.charCodeAt(0) || 0) % 5]; return <span className={`avatar ${color} ${size}`} aria-hidden="true">{(name || '?').slice(0, 2).toUpperCase()}</span>; }
-function Empty({ icon, title, description }: { icon?: ReactNode; title: string; description?: string }) { return <div className="empty-state">{icon || <Box size={28}/>}<strong>{title}</strong>{description && <p>{description}</p>}</div>; }
-function Loading() { return <div className="loading"><LoaderCircle className="spin" size={23}/><span>Panel hazırlanıyor…</span></div>; }
-export function Modal({ title, subtitle, children, onClose, wide = false }: { title: string; subtitle?: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
- const modalRef = useRef<HTMLDivElement>(null); const closeRef = useRef(onClose); closeRef.current = onClose;
- useEffect(() => { const previous = document.activeElement as HTMLElement; const handle = (event: KeyboardEvent) => { if (event.key === 'Escape') closeRef.current(); if (event.key === 'Tab') { const elements = modalRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]'); if (!elements?.length) return; const first = elements[0], last = elements[elements.length - 1]; if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } } }; window.addEventListener('keydown', handle); modalRef.current?.querySelector<HTMLElement>('input,button')?.focus(); const old = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { window.removeEventListener('keydown', handle); document.body.style.overflow = old; previous?.focus(); }; }, []);
- return <div className="modal-overlay" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><div className={`modal ${wide ? 'wide' : ''}`} ref={modalRef} role="dialog" aria-modal="true" aria-label={title}><div className="modal-heading"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" aria-label="Kapat" onClick={onClose}><X size={19}/></button></div>{children}</div></div>;
+function Mark({ small = false }: {
+    small?: boolean;
+}) { return <span className={`brand-mark ${small ? 'small' : ''}`} aria-hidden="true"><svg width="27" height="29" viewBox="0 0 27 29"><path d="M2 5L13.5 0 25 5v7l-11.5 5L2 12V5Zm0 12 11.5 5L25 17v7l-11.5 5L2 24v-7Z" fill="currentColor"/><path d="m13.5 7 6.5 3-6.5 3L7 10l6.5-3Z" fill="#111411"/></svg></span>; }
+function Status({ online, label }: {
+    online: boolean;
+    label?: string;
+}) { return <span className={`status ${label === t("Durum doğrulanamadı") ? 'unknown' : online ? 'online' : 'offline'}`}><span className="status-dot"/>{label ?? (online ? t("Çevrimiçi") : t("Çevrimdışı"))}</span>; }
+function Avatar({ name, size = '' }: {
+    name: string;
+    size?: string;
+}) { const colors = ['sage', 'sand', 'blue', 'rose', 'lilac']; const color = colors[(name?.charCodeAt(0) || 0) % 5]; return <span className={`avatar ${color} ${size}`} aria-hidden="true">{(name || '?').slice(0, 2).toUpperCase()}</span>; }
+function Empty({ icon, title, description }: {
+    icon?: ReactNode;
+    title: string;
+    description?: string;
+}) { return <div className="empty-state">{icon || <Box size={28}/>}<strong>{title}</strong>{description && <p>{description}</p>}</div>; }
+function Loading() { return <div className="loading"><LoaderCircle className="spin" size={23}/><span>{t("Panel hazırlanıyor…")}</span></div>; }
+export function Modal({ title, subtitle, children, onClose, wide = false }: {
+    title: string;
+    subtitle?: string;
+    children: ReactNode;
+    onClose: () => void;
+    wide?: boolean;
+}) {
+    const modalRef = useRef<HTMLDivElement>(null);
+    const closeRef = useRef(onClose);
+    closeRef.current = onClose;
+    useEffect(() => {
+        const previous = document.activeElement as HTMLElement;
+        const handle = (event: KeyboardEvent) => {
+            if (event.key === 'Escape')
+                closeRef.current();
+            if (event.key === 'Tab') {
+                const elements = modalRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),a[href]');
+                if (!elements?.length)
+                    return;
+                const first = elements[0], last = elements[elements.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault();
+                    last.focus();
+                }
+                else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault();
+                    first.focus();
+                }
+            }
+        };
+        window.addEventListener('keydown', handle);
+        modalRef.current?.querySelector<HTMLElement>('input,button')?.focus();
+        const old = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { window.removeEventListener('keydown', handle); document.body.style.overflow = old; previous?.focus(); };
+    }, []);
+    return <div className="modal-overlay" onMouseDown={e => {
+            if (e.target === e.currentTarget)
+                onClose();
+        }}><div className={`modal ${wide ? 'wide' : ''}`} ref={modalRef} role="dialog" aria-modal="true" aria-label={title}><div className="modal-heading"><div><h2>{title}</h2>{subtitle && <p>{subtitle}</p>}</div><button className="icon-button" aria-label={t("Kapat")} onClick={onClose}><X size={19}/></button></div>{children}</div></div>;
 }
-
 export default function App() {
- const [session, setSession] = useState<Session | null>(null), [checking, setChecking] = useState(true), [needsSetup, setNeedsSetup] = useState(false);
- const [servers, setServers] = useState<ServerInfo[]>([]), [selected, setSelected] = useState(''), [data, setData] = useState<ServerData | null>(null), [tab, setTab] = useState<Tab>('overview');
- const serversRef = useRef<ServerInfo[]>([]); serversRef.current = servers;
- const [toast, setToast] = useState<Toast | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [wizard, setWizard] = useState(false), [mobileNav, setMobileNav] = useState(false), [initialHost, setInitialHost] = useState('');
- const api = useCallback(async <T,>(path: string, method = 'GET', body?: unknown): Promise<T> => { const response = await fetch(path, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...(session?.csrfToken ? { 'x-csrf-token': session.csrfToken } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }); const result = await response.json().catch(() => ({})); if (!response.ok) { if (response.status === 401 && !path.includes('/auth/')) { setSession(null); setData(null); } throw new Error(result.error || result.message || `İstek tamamlanamadı (${response.status}).`); } return result as T; }, [session?.csrfToken]);
- useEffect(() => { fetch('/api/session').then(async r => { const body = await r.json(); if (r.ok) setSession(body); else setNeedsSetup(!!body.needsSetup); }).catch(() => setError('SSP API bağlantısı kurulamadı. Sunucu uygulamasının çalıştığını kontrol edin.')).finally(() => setChecking(false)); }, []);
- const notify = (message: string, isError = false) => setToast({ message, error: isError });
- useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(null), toast.error ? 8000 : 4000); return () => clearTimeout(timer); }, [toast]);
- const loadServers = useCallback(async () => { const list = await api<ServerInfo[]>('/api/servers'); setServers(list); setSelected(current => list.some(s => s.id === current) ? current : list[0]?.id || ''); return list; }, [api]);
- useEffect(() => { if (session) loadServers().catch(e => setError(e.message)); }, [session?.user.id, loadServers]);
- const reload = useCallback(async () => { if (!selected) return; let next: ServerData; try { next = await api<ServerData>(`/api/servers/${selected}`); } catch (error) { const fallback = serversRef.current.find(s => s.id === selected); if (fallback) setData(current => current || { server: fallback, players: [], chat: [], mods: [], activity: [], metrics: null, console: [], inventoryProviders: [] }); throw error; } setData(next); setError(''); setServers(current => current.map(s => s.id === selected ? next.server : s)); }, [api, selected]);
- useEffect(() => { setData(null); if (selected) reload().catch(e => setError(e.message)); }, [selected, reload]);
- useEffect(() => { if (!selected || !session) return; const timer = window.setInterval(() => { if (document.visibilityState === 'visible') reload().catch(() => {}); }, 10000); return () => clearInterval(timer); }, [reload, selected, session]);
- async function action(path: string, method = 'POST', body?: unknown, success = 'İşlem tamamlandı.') { setBusy(true); try { const result = await api<any>(path, method, body); await reload(); notify(success); return result; } catch (e) { notify((e as Error).message, true); return null; } finally { setBusy(false); } }
- async function signIn(value: Session, code?: string, host?: string) { setSession(value); setNeedsSetup(false); setError(''); if (host) { setInitialHost(host); setWizard(true); } if (code) { try { const r = await fetch('/api/invites/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-csrf-token': value.csrfToken }, body: JSON.stringify({ code }) }); const body = await r.json(); if (!r.ok) throw new Error(body.error || 'Davet kodu kullanılamadı.'); const listResponse = await fetch('/api/servers'); if (listResponse.ok) { const list = await listResponse.json(); setServers(list); setSelected(body.serverId || list[0]?.id || ''); } notify('Sunucu paneline erişim eklendi.'); } catch (e) { notify((e as Error).message, true); } } }
- const server = data?.server, onlinePlayers = data?.playerCounts?.online ?? data?.discovery?.playersOnline ?? (data?.bridgeConnected || server?.demo ? data?.players.filter(p => p.online).length : null) ?? '—';
- const canManage = !!server && ['owner', 'admin', 'operator'].includes(server.permissions), isAdmin = !!server && ['owner', 'admin'].includes(server.permissions);
- async function copy(value: string) { try { await navigator.clipboard.writeText(value); notify('Panoya kopyalandı.'); } catch { notify('Tarayıcı panoya erişemedi. Metni seçerek kopyalayabilirsiniz.', true); } }
- return <>{checking ? <div className="app-loading"><Mark/><Loading/></div> : !session ? <Auth needsSetup={needsSetup} api={api} onSignIn={signIn} connectionError={error}/> : <div className="app-shell">
-  <aside className={`sidebar ${mobileNav ? 'open' : ''}`}><a className="brand" href="#" onClick={e => { e.preventDefault(); setTab('overview'); }}><Mark/><div><strong>SSP<span className="brand-period">.</span></strong><span>STYLISH SERVERS PANEL</span></div></a><button className="icon-button mobile-close" aria-label="Menüyü kapat" onClick={() => setMobileNav(false)}><X size={20}/></button>
-   <div className="workspace-label">ÇALIŞMA ALANI <span>PERSONAL</span></div><div className="workspace-card"><span className="workspace-icon"><Server size={19}/></span><div><strong>Sunucularım</strong><span>{servers.length} sunucu bağlı</span></div><ChevronDown size={15}/></div>
-   <div className="nav-label">SUNUCU YÖNETİMİ</div><nav aria-label="Ana gezinme">{navItems.map(item => <button key={item.id} className={`nav-item ${tab === item.id ? 'active' : ''}`} onClick={() => { setTab(item.id); setMobileNav(false); }}><item.icon size={18}/><span>{tabNames[item.id]}</span>{item.id === 'players' && <span className="nav-count">{onlinePlayers}</span>}{item.id === 'chat' && <span className="nav-small-dot"/>}{tab === item.id && <span className="nav-active-line"/>}</button>)}</nav>
-   <div className="sidebar-bottom"><div className="open-source"><span><span className="status-dot"/> AÇIK KAYNAK. SINIRSIZ KONTROL.</span><p>Sunucun senin.<br/>Kontrol de öyle.</p><a href="https://github.com/OpenMTLLC/StylishServersPanel_SSP" target="_blank" rel="noreferrer">GitHub’da incele <ArrowUpRight size={14}/></a></div><div className="account"><Avatar name={session.user.username}/><div><strong>{session.user.username}</strong><span>Panel hesabı</span></div><button className="icon-button" title="Çıkış yap" aria-label="Çıkış yap" onClick={async () => { try { await api('/api/auth/logout', 'POST'); setSession(null); setServers([]); setData(null); setSelected(''); } catch (e) { notify((e as Error).message, true); } }}><LogOut size={17}/></button></div></div>
+    const preferences = usePreferences();
+    const [session, setSession] = useState<Session | null>(null), [checking, setChecking] = useState(true), [needsSetup, setNeedsSetup] = useState(false);
+    const [servers, setServers] = useState<ServerInfo[]>([]), [selected, setSelected] = useState(''), [data, setData] = useState<ServerData | null>(null), [tab, setTab] = useState<Tab>('overview');
+    const selectedRef = useRef(selected); selectedRef.current = selected;
+    const serversRef = useRef<ServerInfo[]>([]);
+    serversRef.current = servers;
+    const [toast, setToast] = useState<Toast | null>(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [wizard, setWizard] = useState(false), [mobileNav, setMobileNav] = useState(false), [initialHost, setInitialHost] = useState('');
+    const api = useCallback(async <T,>(path: string, method = 'GET', body?: unknown): Promise<T> => {
+        const response = await fetch(path, { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json', ...(session?.csrfToken ? { 'x-csrf-token': session.csrfToken } : {}) }, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            if (response.status === 401 && !path.includes('/auth/')) {
+                setSession(null);
+                setData(null);
+            }
+            throw new Error(result.error || result.message || `İstek tamamlanamadı (${response.status}).`);
+        }
+        return result as T;
+    }, [session?.csrfToken]);
+    useEffect(() => {
+        fetch('/api/session').then(async (r) => {
+            const body = await r.json();
+            if (r.ok)
+                setSession(body);
+            else
+                setNeedsSetup(!!body.needsSetup);
+        }).catch(() => setError(t("SSP API bağlantısı kurulamadı. Sunucu uygulamasının çalıştığını kontrol edin."))).finally(() => setChecking(false));
+    }, []);
+    const notify = (message: string, isError = false) => setToast({ message, error: isError });
+    useEffect(() => {
+        if (!toast)
+            return;
+        const timer = window.setTimeout(() => setToast(null), toast.error ? 8000 : 4000);
+        return () => clearTimeout(timer);
+    }, [toast]);
+    const loadServers = useCallback(async () => { const list = await api<ServerInfo[]>('/api/servers'); setServers(list); setSelected(current => list.some(s => s.id === current) ? current : list[0]?.id || ''); return list; }, [api]);
+    useEffect(() => {
+        if (session)
+            loadServers().catch(e => setError(e.message));
+    }, [session?.user.id, loadServers]);
+    const reload = useCallback(async () => {
+        if (!selected)
+            return;
+        let next: ServerData;
+        try {
+            next = await api<ServerData>(`/api/servers/${selected}`);
+        }
+        catch (error) {
+            if(selectedRef.current !== selected)return;
+        const fallback = serversRef.current.find(s => s.id === selected);
+            if (fallback)
+                setData(current => current || { server: fallback, players: [], chat: [], mods: [], activity: [], metrics: null, console: [], inventoryProviders: [] });
+            throw error;
+        }
+        setData(next);
+        setError('');
+        setServers(current => current.map(s => s.id === selected ? next.server : s));
+    }, [api, selected]);
+    useEffect(() => {
+        setData(null);
+        if (selected)
+            reload().catch(e => setError(e.message));
+    }, [selected, reload]);
+    useEffect(() => {
+        if (!selected || !session)
+            return;
+        const timer = window.setInterval(() => {
+            if (document.visibilityState === 'visible')
+                reload().catch(() => { });
+        }, 10000);
+        return () => clearInterval(timer);
+    }, [reload, selected, session]);
+    async function action(path: string, method = 'POST', body?: unknown, success = t("İşlem tamamlandı.")) {
+        setBusy(true);
+        try {
+            const result = await api<any>(path, method, body);
+            await reload();
+            notify(success);
+            return result;
+        }
+        catch (e) {
+            notify((e as Error).message, true);
+            return null;
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    async function signIn(value: Session) { setSession(value); setSelected(value.serverId || ''); setNeedsSetup(false); setError(''); }
+    const server = data?.server, onlinePlayers = data?.playerCounts?.online ?? data?.discovery?.playersOnline ?? (data?.bridgeConnected || false ? data?.players.filter(p => p.online).length : null) ?? '—';
+    const has = (action: string) => !!server?.access?.actions.includes(action);
+    const canManage = has('server.power'), isAdmin = has('settings.write');
+    const allowedTabs = server?.access?.tabs ?? servers.find(item => item.id === selected)?.access?.tabs ?? [];
+    useEffect(() => {
+        if (allowedTabs.length && !allowedTabs.includes(tab))
+            setTab(allowedTabs[0] as Tab);
+    }, [allowedTabs.join(','), tab]);
+    async function copy(value: string) {
+        try {
+            await navigator.clipboard.writeText(value);
+            notify(t("Panoya kopyalandı."));
+        }
+        catch {
+            notify(t("Tarayıcı panoya erişemedi. Metni seçerek kopyalayabilirsiniz."), true);
+        }
+    }
+    return <><BinaryBackground />{checking ? <div className="app-loading"><Mark /><Loading /></div> : !session ? <AuthScreen api={api} onSignIn={signIn} connectionError={error}/> : <div className="app-shell">
+  <aside className={`sidebar ${mobileNav ? 'open' : ''}`}><a className="brand" href="#" onClick={e => { e.preventDefault(); setTab('overview'); }}><Mark /><div><strong>SSP<span className="brand-period">.</span></strong><span>STYLISH SERVERS PANEL</span></div></a><button className="icon-button mobile-close" aria-label={t("Menüyü kapat")} onClick={() => setMobileNav(false)}><X size={20}/></button>
+   {null}<div className="workspace-card"><span className="workspace-icon"><Server size={19}/></span><div><strong>{t("Sunucularım")}</strong><span>{servers.length}{" " + t("sunucu bağlı")}</span></div><ChevronDown size={15}/></div>
+   <div className="nav-label">{t("SUNUCU YÖNETİMİ")}</div><nav aria-label={t("Ana gezinme")}>{navItems.filter(item => allowedTabs.includes(item.id)).map(item => <button key={item.id} className={`nav-item ${tab === item.id ? 'active' : ''}`} onClick={() => { setTab(item.id); setMobileNav(false); }}><item.icon size={18}/><span>{t(tabNames[item.id])}</span>{item.id === 'players' && <span className="nav-count">{onlinePlayers}</span>}{item.id === 'chat' && <span className="nav-small-dot"/>}{tab === item.id && <span className="nav-active-line"/>}</button>)}</nav>
+   <div className="sidebar-bottom"><a className="github-link" href="https://github.com/OpenMTLLC/StylishServersPanel_SSP" target="_blank" rel="noreferrer">GitHub <ExternalLink size={17}/></a><div className="account"><Avatar name={session.user.username}/><div><strong>{session.user.username}</strong><span>{t("Panel hesabı")}</span></div><button className="icon-button" title={t("Çıkış yap")} aria-label={t("Çıkış yap")} onClick={async () => {
+                try {
+                    await api('/api/auth/logout', 'POST');
+                    setSession(null);
+                    setServers([]);
+                    setData(null);
+                    setSelected('');
+                }
+                catch (e) {
+                    notify((e as Error).message, true);
+                }
+            }}><LogOut size={17}/></button></div></div>
   </aside>{mobileNav && <div className="sidebar-backdrop" onClick={() => setMobileNav(false)}/>}
-  <div className="main-shell"><header className="topbar"><div className="breadcrumbs"><button className="icon-button mobile-menu" aria-label="Menüyü aç" onClick={() => setMobileNav(true)}><Menu size={20}/></button><Server size={15}/><span>Sunucularım</span><ChevronRight size={14}/><strong>{server?.name || 'Çalışma alanı'}</strong></div><div className="topbar-right"><span className="connection-label"><span className="status-dot"/> Panel bağlantısı aktif</span><span className="topbar-divider"/><button className="icon-button" aria-label="Paneli yenile" title="Yenile" onClick={() => reload().then(() => notify('Veriler güncellendi.')).catch(e => notify(e.message, true))}><RefreshCw size={17}/></button><span className="version">v0.2.0</span></div></header>
-   <main><div className="page-title-row"><div><div className="eyebrow">SUNUCUNUN KONTROL MERKEZİ</div><h1>{tabNames[tab]}<span className="title-dot">.</span></h1><p className="page-description">{tab === 'overview' ? 'Her şey yerli yerinde. Sunucun tek bir bakışta.' : tab === 'players' ? 'Topluluğunu tanı. Her oyuncuyu yakından takip et.' : tab === 'chat' ? 'Sunucundaki tüm konuşmalar, tek bir akışta.' : tab === 'mods' ? 'Sunucunun sınırlarını genişlet.' : tab === 'activity' ? 'Kim, ne zaman, ne yaptı? Tüm işlemler kayıt altında.' : tab === 'console' ? 'Sunucunun nabzını gerçek zamanlı takip et.' : 'Sunucunu, erişimleri ve panel tercihlerini yapılandır.'}</p></div><div className="page-actions"><div className="select-wrap server-select"><Gamepad2 size={16}/><select aria-label="Aktif sunucu" value={selected} onChange={e => setSelected(e.target.value)}>{!servers.length && <option value="">Sunucu seçin</option>}{servers.map(s => <option value={s.id} key={s.id}>{s.name}</option>)}</select><ChevronDown size={14}/></div><button className="button primary" onClick={() => setWizard(true)}><Plus size={16}/> Sunucu ekle</button></div></div>
-    {error && <div className="notice error"><Shield size={17}/>{error}<button className="text-button" onClick={() => reload().catch(e => setError(e.message))}>Tekrar dene</button></div>}
-    {server?.demo && <div className="demo-banner"><span><Sparkles size={14}/> DEMO ÇALIŞMA ALANI</span><p>Örnek verilerle özgürce keşfet. İşlemler gerçek sunucularını etkilemez.</p><span className="demo-mode">İzole oturum <ShieldCheck size={13}/></span></div>}
-    {!servers.length ? <div className="welcome-panel"><span className="welcome-icon"><Server size={40}/></span><h2>İlk sunucuna yer aç.</h2><p>Mevcut bir sunucuyu SSH ile bağla, yeni bir sunucu kur veya bir arkadaşının davetini kullan.</p><div className="button-row"><button className="button primary" onClick={() => setWizard(true)}><Plus size={16}/> Sunucu ekle</button><button className="button secondary" onClick={async () => { const result = await action('/api/demo', 'POST', undefined, 'Demo sunucusu hazır.'); if (result?.csrfToken) setSession(result); await loadServers(); }}>Demoyu keşfet <ArrowRight size={16}/></button></div><Redeem api={api} onSuccess={() => loadServers()} notify={notify}/></div> : !data ? <Loading/> : <>
-     <div className="server-overview-bar"><div className="server-identity"><div className={`game-icon ${server?.game}`}><Gamepad2 size={25}/></div><div><h2>{server?.name}<span className="tag">{gameNames[server?.game || 'minecraft']}</span></h2><button className="address-copy" title="Sunucu adresini kopyala" onClick={() => copy(server?.address || '')}><span>{server?.address || 'Adres bekleniyor'}</span><Copy size={12}/></button></div></div><div className="server-bar-right"><Status online={server?.status === 'running'} label={server?.status === 'installing' ? 'Kuruluyor' : server?.status === 'error' ? 'Bağlantı hatası' : server?.status === 'running' ? 'Çevrimiçi' : server?.status === 'stopped' ? 'Çevrimdışı' : 'Durum doğrulanamadı'}/><span className="server-bar-divider"/><button className="button small secondary" disabled={!canManage || busy} onClick={() => action(`/api/servers/${selected}/power`, 'POST', { action: 'restart' }, 'Yeniden başlatma isteği gönderildi.')}><RefreshCw size={14}/> Yeniden başlat</button><button className={`button small ${server?.status === 'running' ? 'danger-outline' : 'primary'}`} disabled={!canManage || busy} onClick={() => action(`/api/servers/${selected}/power`, 'POST', { action: server?.status === 'running' ? 'stop' : 'start' }, server?.status === 'running' ? 'Durdurma isteği gönderildi.' : 'Başlatma isteği gönderildi.')}><Power size={14}/>{server?.status === 'running' ? 'Durdur' : 'Başlat'}</button></div></div>
-     {tab === 'overview' && <Overview data={data} setTab={setTab} action={action} canManage={isAdmin} busy={busy}/>}
-     {tab === 'console' && <ConsolePanel lines={data.console || []} full onCommand={command => action(`/api/servers/${selected}/command`, 'POST', { command }, 'Komut sunucuya gönderildi.')} disabled={!isAdmin || busy}/>}
-     {tab === 'players' && <Players data={data} api={api} action={action} notify={notify} canManage={canManage} isAdmin={isAdmin} busy={busy} copy={copy}/>}
-     {tab === 'chat' && <Chat data={data} action={action} canManage={canManage} busy={busy}/>}
-     {tab === 'mods' && <ModsCatalog data={data} api={api} action={action} canManage={isAdmin} busy={busy} onSettings={() => setTab('settings')}/>}
-     {tab === 'activity' && <ActivityPanel data={data} action={action} canManage={canManage} isAdmin={isAdmin} busy={busy}/>}
-     {tab === 'settings' && <Settings data={data} api={api} action={action} notify={notify} isAdmin={isAdmin} copy={copy} onServerAdded={() => loadServers()}/>}
+  <div className="main-shell"><header className="topbar"><div className="breadcrumbs"><button className="icon-button mobile-menu" aria-label={t("Menüyü aç")} onClick={() => setMobileNav(true)}><Menu size={20}/></button><Server size={15}/><span>{t("Sunucularım")}</span><ChevronRight size={14}/><strong>{server?.name || t("Çalışma alanı")}</strong></div><div className="topbar-right"><PreferencesControls />{null}<span className="topbar-divider"/><button className="icon-button" aria-label={t("Paneli yenile")} title={t("Yenile")} onClick={() => reload().then(() => notify(t("Veriler güncellendi."))).catch(e => notify(e.message, true))}><RefreshCw size={17}/></button><span className="version">{t("v0.3.0")}</span></div></header>
+   <main><div className="page-title-row"><div><div className="eyebrow">{t("SUNUCUNUN KONTROL MERKEZİ")}</div><h1>{t(tabNames[tab])}<span className="title-dot">.</span></h1><p className="page-description">{tab === 'overview' ? t("Her şey yerli yerinde. Sunucun tek bir bakışta.") : tab === 'players' ? t("Topluluğunu tanı. Her oyuncuyu yakından takip et.") : tab === 'chat' ? t("Sunucundaki tüm konuşmalar, tek bir akışta.") : tab === 'mods' ? t("Sunucunun sınırlarını genişlet.") : tab === 'activity' ? t("Kim, ne zaman, ne yaptı? Tüm işlemler kayıt altında.") : tab === 'console' ? t("Sunucunun nabzını gerçek zamanlı takip et.") : t("Sunucunu, erişimleri ve panel tercihlerini yapılandır.")}</p></div><div className="page-actions"><div className="select-wrap server-select"><Gamepad2 size={16}/><select aria-label={t("Aktif sunucu")} value={selected} onChange={e => setSelected(e.target.value)}>{!servers.length && <option value="">{t("Sunucu seçin")}</option>}{servers.map(s => <option value={s.id} key={s.id}>{s.name}</option>)}</select><ChevronDown size={14}/></div><button className="button primary" onClick={() => setWizard(true)}><Plus size={16}/>{" " + t("Sunucu bağla")}</button></div></div>
+    {error && <div className="notice error"><Shield size={17}/>{t(error)}<button className="text-button" onClick={() => reload().catch(e => setError(e.message))}>{t("Tekrar dene")}</button></div>}
+    {false}
+    {!servers.length ? <div className="welcome-panel"><Server size={38}/><h2>{t("Mevcut sunucuya bağlan")}</h2><p>{t("Sunucu bağlantısını doğrulayarak bu hesaba ekleyin.")}</p><button className="button primary" onClick={() => setWizard(true)}><Link2 size={18}/>{t("Sunucu bağla")}</button></div> : !data ? <Loading /> : <>
+     <div className="server-overview-bar"><div className="server-identity"><div className={`game-icon ${server?.game}`}><Gamepad2 size={25}/></div><div><h2>{server?.name}<span className="tag">{gameNames[server?.game || 'minecraft']}</span></h2><button className="address-copy" title={t("Sunucu adresini kopyala")} onClick={() => copy(server?.address || '')}><span>{server?.address || t('Adres bekleniyor')}</span><Copy size={12}/></button></div></div><div className="server-bar-right"><Status online={server?.status === 'running'} label={server?.status === 'installing' ? 'Kuruluyor' : server?.status === 'error' ? t("Bağlantı hatası") : server?.status === 'running' ? t("Çevrimiçi") : server?.status === 'stopped' ? t("Çevrimdışı") : t("Durum doğrulanamadı")}/><span className="server-bar-divider"/><button className="button small secondary" disabled={!canManage || busy} onClick={() => action(`/api/servers/${selected}/power`, 'POST', { action: 'restart' }, t("Yeniden başlatma isteği gönderildi."))}><RefreshCw size={14}/>{" " + t("Yeniden başlat")}</button><button className={`button small ${server?.status === 'running' ? 'danger-outline' : 'primary'}`} disabled={!canManage || busy} onClick={() => action(`/api/servers/${selected}/power`, 'POST', { action: server?.status === 'running' ? 'stop' : 'start' }, server?.status === 'running' ? t("Durdurma isteği gönderildi.") : t("Başlatma isteği gönderildi."))}><Power size={14}/>{server?.status === 'running' ? t('Durdur') : t("Başlat")}</button></div></div>
+     {tab === 'overview' && allowedTabs.includes('overview') && <Overview data={data} setTab={setTab} action={action} canManage={isAdmin} busy={busy}/>}
+     {tab === 'console' && allowedTabs.includes('console') && <ConsolePanel lines={data.console || []} full onCommand={command => action(`/api/servers/${selected}/command`, 'POST', { command }, t("Komut sunucuya gönderildi."))} disabled={!has('console.execute') || busy}/>}
+     {tab === 'players' && allowedTabs.includes('players') && <PlayersPanel key={data.server.id} data={data} api={api} action={action} notify={notify} canManage={canManage} isAdmin={isAdmin} busy={busy} copy={copy}/>}
+     {tab === 'chat' && allowedTabs.includes('chat') && <Chat key={data.server.id} data={data} action={action} canManage={has('chat.send')} busy={busy}/>}
+     {tab === 'mods' && allowedTabs.includes('mods') && <ModsCatalog key={data.server.id} data={data} api={api} action={action} canManage={has('mods.install') || has('mods.remove')} canInstall={has('mods.install')} canRemove={has('mods.remove')} busy={busy} onSettings={() => setTab('settings')}/>}
+     {tab === 'activity' && allowedTabs.includes('activity') && <ActivityLedger key={data.server.id} data={data} action={action} canManage={canManage} isAdmin={isAdmin} busy={busy}/>}
+     {tab === 'settings' && allowedTabs.includes('settings') && <SettingsPanel key={data.server.id} data={data} api={api} action={action} notify={notify} isAdmin={isAdmin} copy={copy} onServerAdded={() => loadServers()}/>}
     </>}
-    <footer className="page-footer"><span><Mark small/> Stylish Servers Panel</span><span>Özgür yazılım. Tam kontrol. <span className="footer-dot">•</span> SSP v0.2.0</span><span className="footer-status"><span className="status-dot"/> Sistem hazır</span></footer>
+
    </main>
   </div>
  </div>}
- {toast && <div className={`toast ${toast.error ? 'error' : ''}`} role={toast.error ? 'alert' : 'status'}>{toast.error ? <Shield size={18}/> : <CheckCheck size={18}/>}<span>{toast.message}</span><button className="icon-button" aria-label="Bildirimi kapat" onClick={() => setToast(null)}><X size={15}/></button></div>}
- {wizard && session && <ServerWizard api={api} initialHost={initialHost} onClose={() => setWizard(false)} onCreated={async id => { setWizard(false); await loadServers(); setSelected(id); setTab('overview'); notify('Sunucu çalışma alanına eklendi.'); }} notify={notify}/>}
+ {toast && <div className={`toast ${toast.error ? 'error' : ''}`} role={toast.error ? 'alert' : 'status'}>{toast.error ? <Shield size={18}/> : <CheckCheck size={18}/>}<span>{t(toast.message)}</span><button className="icon-button" aria-label={t("Bildirimi kapat")} onClick={() => setToast(null)}><X size={15}/></button></div>}
+ {wizard && session && <ServerWizard api={api} initialHost={initialHost} onClose={() => setWizard(false)} onCreated={async (id) => { setWizard(false); await loadServers(); setSelected(id); setTab('overview'); notify(t("Sunucu çalışma alanına eklendi.")); }} notify={notify}/>}
  </>;
 }
-
-function Auth({ needsSetup, api, onSignIn, connectionError }: { needsSetup: boolean; api: <T>(path: string, method?: string, body?: unknown) => Promise<T>; onSignIn: (session: Session, code?: string, host?: string) => void; connectionError: string }) {
- const [register, setRegister] = useState(needsSetup), [mode, setMode] = useState<'own'|'friend'>('own'), [username, setUsername] = useState(''), [password, setPassword] = useState(''), [code, setCode] = useState(''), [host, setHost] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState('');
- async function submit(event: FormEvent) { event.preventDefault(); setError(''); setBusy(true); try { const value = await api<Session>(register ? '/api/auth/register' : '/api/auth/login', 'POST', { username, password, ...(register && code ? { code } : {}) }); onSignIn(value, !register && code ? code : undefined, host); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
- async function demo() { setBusy(true); setError(''); try { onSignIn(await api<Session>('/api/demo', 'POST')); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
- return <div className="auth-page"><div className="auth-story"><a className="brand" href="#"><Mark/><div><strong>SSP<span className="brand-period">.</span></strong><span>STYLISH SERVERS PANEL</span></div></a><div className="auth-story-content"><div className="eyebrow"><span className="status-dot"/> AÇIK KAYNAK SUNUCU YÖNETİMİ</div><h1>Senin sunucun.<br/>Senin <span>kuralların.</span></h1><p>Oyuncular, sohbet, modlar ve tüm kontrol.<br/>Her şey tek bir panelde, tam olması gereken yerde.</p><div className="auth-server-card"><div className="auth-server-card-top"><span><Gamepad2 size={20}/> Senin dünyan</span><Status online/></div><div className="auth-terminal"><span><i>01</i> [SSP] Sunucuya bağlanılıyor…</span><span><i>02</i> [SSP] Dünyalar hazırlanıyor.</span><span><i>03</i> <b>Her şey hazır. Kontrol sende.</b><span className="terminal-cursor"/></span></div><div className="auth-card-bottom"><span><Users size={14}/> Topluluğunu yönet</span><span><ShieldCheck size={14}/> Güvenle bağlan</span></div></div></div><div className="auth-story-footer"><span>Özgür yazılım. Sınırsız olasılık.</span><span>v0.2.0</span></div></div>
- <div className="auth-form-side"><div className="auth-form-wrap"><div className="eyebrow">KONTROL MERKEZİNE HOŞ GELDİN</div><h2>{register ? 'Başlangıcı sen yap.' : 'Kaldığın yerden devam.'}</h2><p>{register ? 'Hesabını oluştur ve sunucularına yer aç.' : 'Hesabına giriş yap, sunucularını yönet.'}</p><div className="auth-tabs"><button className={!register ? 'active' : ''} onClick={() => { setRegister(false); setError(''); }}>Giriş yap</button><button className={register ? 'active' : ''} onClick={() => { setRegister(true); setError(''); }}>Hesap oluştur</button></div><form onSubmit={submit} className="form-stack"><label>Kullanıcı adı<div className="input-icon"><Users size={16}/><input autoComplete="username" placeholder="Kullanıcı adını yaz" value={username} minLength={3} maxLength={32} required onChange={e => setUsername(e.target.value)}/></div></label><label>Parola<div className="input-icon"><LockKeyhole size={16}/><input type="password" autoComplete={register ? 'new-password' : 'current-password'} placeholder={register ? 'En az 10 karakter' : 'Parolanı yaz'} value={password} minLength={register ? 10 : 1} maxLength={128} required onChange={e => setPassword(e.target.value)}/></div></label><div className="connection-choice"><button type="button" className={mode === 'own' ? 'active' : ''} onClick={() => setMode('own')}><Server size={15}/> Kendi sunucum</button><button type="button" className={mode === 'friend' ? 'active' : ''} onClick={() => setMode('friend')}><Link2 size={15}/> Davet kodum var</button></div><label>SSH giriniz <span className="field-optional">{mode === 'friend' ? 'Davetle girişte gerekli değil' : 'İsteğe bağlı'}</span><div className="input-icon"><Terminal size={16}/><input placeholder="sunucu-ip-adresi" disabled={mode === 'friend'} value={host} maxLength={253} onChange={e => setHost(e.target.value)}/></div></label><label>Arkadaşının erişim kodu <span className="field-optional">48 karakter</span><div className="input-icon"><KeyRound size={16}/><input placeholder="48 karakterli davet kodu" value={code} minLength={code ? 48 : undefined} maxLength={48} required={mode === 'friend'} autoComplete="off" onChange={e => setCode(e.target.value.trim())}/></div></label>{register && !needsSetup && <p className="field-help">Yeni hesap için mevcut bir sunucu yöneticisinin davet kodu gerekir.</p>}{(error || connectionError) && <div className="notice error" role="alert">{error || connectionError}</div>}<button className="button primary auth-submit" disabled={busy}>{busy ? <LoaderCircle size={17} className="spin"/> : <>{register ? 'Hesabı oluştur' : 'Panele giriş yap'}<ArrowRight size={17}/></>}</button></form><div className="auth-or"><span/>önce bir göz at<span/></div><button className="button secondary demo-button" disabled={busy} onClick={demo}><Sparkles size={17}/> Demoyu keşfet <ArrowUpRight size={16}/></button><p className="auth-note"><ShieldCheck size={14}/> Bağlantı bilgilerin yalnızca sunucu tarafında saklanır.</p></div><div className="auth-form-footer">SSP <span>·</span> Stylish Servers Panel</div></div></div>;
+function Overview({ data, setTab, action, busy }: {
+    data: ServerData;
+    setTab: (tab: Tab) => void;
+    action: (...args: any[]) => Promise<any>;
+    canManage: boolean;
+    busy: boolean;
+}) {
+    const metrics = data.metrics || {} as Metrics, online = (data.players || []).filter(player => player.online);
+    const has = (name: string) => data.server.access.actions.includes(name), visible = (name: Tab) => data.server.access.tabs.includes(name);
+    const onlineCount = data.playerCounts?.online ?? (data.bridgeConnected ? online.length : null), total = data.playerCounts?.total ?? (data.bridgeConnected ? data.players.length : null);
+    const cards = [{ Icon: Users, label: t('Çevrimiçi oyuncular'), value: measured(onlineCount), unit: `/ ${measured(data.server.maxPlayers)}`, detail: t('{count} toplam oyuncu', { count: measured(total) }) }, { Icon: Cpu, label: t('İşlemci kullanımı'), value: measured(metrics.cpu), unit: '%', detail: t('CPU yükü') }, { Icon: MemoryStick, label: t('Sunucu belleği'), value: measured(metrics.memory), unit: `/ ${measured(metrics.memoryTotal)} GB`, detail: t('Sunucuya ayrılan bellek') }, { Icon: Activity, label: t('Sunucu performansı'), value: measured(metrics.tps), unit: data.server.game === 'minecraft' ? 'TPS' : t('tick/sn'), detail: t('Çalışma süresi') + ': ' + (typeof metrics.uptime === 'number' ? duration(metrics.uptime) : '—') }];
+    return <>
+ {data.discovery && <section className="panel discovery-panel"><div className="panel-heading"><div><Search size={19}/><h3>{t('Sunucu taraması')}</h3></div>{has('server.inspect') && <button className="button secondary small" disabled={busy} onClick={() => action(`/api/servers/${data.server.id}/inspect`, 'POST', undefined, t('Sunucu bilgileri güncellendi.'))}><RefreshCw size={16}/>{t('Yeniden tara')}</button>}</div><div className="discovery-panel-body"><DiscoverySummary server={data.discovery}/>{data.observedAt && <p className="field-help">{t('Son tarama')}: {date(data.observedAt)}</p>}</div></section>}
+ <div className="stats-grid">{cards.map(({ Icon, label, value, unit, detail }) => <div className="stat-card" key={label}><div className="stat-top"><span><Icon size={19}/>{label}</span></div><div className="stat-value">{value}<span>{unit}</span></div><div className="stat-bottom"><span>{detail}</span></div></div>)}</div>
+ <div className="dashboard-grid">
+ {has('console.read') && <section className="panel dashboard-console"><div className="panel-heading"><div><Terminal size={20}/><h3>{t('Konsol')}</h3></div><button className="text-button" onClick={() => setTab('console')}>{t('Konsolu aç')}<ArrowUpRight size={16}/></button></div><ConsolePanel compact lines={data.console || []} onCommand={command => action(`/api/servers/${data.server.id}/command`, 'POST', { command }, t('Komut sunucuya gönderildi.'))} disabled={!has('console.execute') || busy}/></section>}
+ <section className="panel server-details"><div className="panel-heading"><div><SlidersHorizontal size={20}/><h3>{t('Sunucu bilgileri')}</h3></div>{visible('settings') && <button className="icon-button" aria-label={t('Sunucu ayarlarını aç')} onClick={() => setTab('settings')}><ArrowUpRight size={18}/></button>}</div><div className="details-content"><div className="detail-item"><span>{t('Oyun türü')}</span><strong>{gameNames[data.server.game]}</strong></div><div className="detail-item"><span>{t('Sunucu yazılımı')}</span><strong>{data.server.edition === 'neoforge' ? 'NeoForge' : capitalize(data.server.edition)} <span className="mini-tag">{data.server.version}</span></strong></div><div className="detail-item"><span>{t('Çalışma süresi')}</span><strong>{typeof metrics.uptime === 'number' ? duration(metrics.uptime) : '—'}</strong></div>{has('mods.read') && <div className="detail-item"><span>{t('Yüklü modlar')}</span><button className="inline-link" onClick={() => setTab('mods')}>{data.mods.length}<ChevronRight size={16}/></button></div>}<div className="storage-usage"><div><span><HardDrive size={17}/>{t('Disk kullanımı')}</span><strong>{measured(metrics.disk)} / {measured(metrics.diskTotal)} GB</strong></div><div className="progress-track"><span style={{ width: `${Math.min(100, metrics.disk / metrics.diskTotal * 100) || 0}%` }}/></div></div></div></section>
+ {has('players.read') && <section className="panel online-panel"><div className="panel-heading"><div><Users size={20}/><h3>{t('Çevrimiçi oyuncular')}</h3><span className="count-pill">{measured(onlineCount)}</span></div><button className="text-button" onClick={() => setTab('players')}>{t('Tüm oyuncular')}<ArrowUpRight size={16}/></button></div>{online.length ? <div className="compact-player-list">{online.slice(0, 4).map(player => <div className="compact-player" key={player.uuid}><div className="avatar-with-status"><Avatar name={player.name}/><span className="status-dot"/></div><div><strong>{player.name}</strong><span>{t(player.role === 'admin' ? t("Yönetici") : player.role === 'moderator' ? t("Moderatör") : t("Oyuncu"))}</span></div><span className="ping"><Wifi size={16}/>{player.ping}{" " + t("ms")}</span></div>)}</div> : <Empty title={data.bridgeConnected ? t('Şu an çevrimiçi oyuncu yok') : t('Oyuncu ayrıntıları için oyun köprüsünü bağlayın.')}/>}</section>}
+ {has('activity.read') && <section className="panel recent-activity"><div className="panel-heading"><div><FileClock size={20}/><h3>{t('Son işlemler')}</h3></div><button className="text-button" onClick={() => setTab('activity')}>{t('Tüm geçmiş')}<ArrowUpRight size={16}/></button></div><div className="activity-preview">{data.activity.slice(0, 4).map(item => <div className="activity-preview-row" key={item.id}><span className="activity-event-icon"><FileClock size={18}/></span><div><strong>{item.detail}</strong><span>{item.actor}<i>·</i>{date(item.timestamp)}</span></div></div>)}{!data.activity.length && <Empty title={t('İşlemler burada görünecek')}/>}</div></section>}
+ </div></>;
 }
-
-function Sparkline({ color = '#b8df91', seed = 0 }: { color?: string; seed?: number }) { const paths = ['M0 34 9 32 16 35 24 24 31 29 40 20 48 26 57 17 65 21 73 11 81 15 90 7 99 11 109 5 120 8', 'M0 30 11 31 20 24 30 25 39 19 49 23 60 20 70 13 80 18 90 10 100 16 110 9 120 10', 'M0 31 12 31 24 30 36 29 48 29 60 28 72 28 84 27 96 26 108 26 120 25', 'M0 23 10 17 20 23 30 15 40 17 50 9 60 20 70 15 80 18 90 12 100 14 110 7 120 11']; return <svg className="sparkline" viewBox="0 0 120 44" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id={`spark-${seed}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={color} stopOpacity=".18"/><stop offset="100%" stopColor={color} stopOpacity="0"/></linearGradient></defs><path d={`${paths[seed % 4]} L120 44 L0 44Z`} fill={`url(#spark-${seed})`}/><path d={paths[seed % 4]} fill="none" stroke={color} strokeWidth="1.6" vectorEffect="non-scaling-stroke"/></svg>; }
-function Overview({ data, setTab, action, canManage, busy }: { data: ServerData; setTab: (tab: Tab) => void; action: (...args: any[]) => Promise<any>; canManage: boolean; busy: boolean }) {
- const metrics = data.metrics || {} as Metrics, players = data.players || [], online = players.filter(p => p.online);
- const onlineCount = data.playerCounts?.online ?? data.discovery?.playersOnline ?? (data.bridgeConnected || data.server.demo ? online.length : null);
- const totalCount = data.playerCounts?.total ?? data.discovery?.playersTotal ?? (data.bridgeConnected || data.server.demo ? players.length : null);
- const memoryRatio = typeof metrics.memory === 'number' && typeof metrics.memoryTotal === 'number' && metrics.memoryTotal > 0 ? Math.round(metrics.memory / metrics.memoryTotal * 100) : null;
- const live = data.bridgeConnected || data.server.demo;
- const totalLabel = data.discovery?.playersTotalSource === 'usercache-fallback' ? 'önbellekten tahmini oyuncu' : 'benzersiz oyuncu';
- const cards = [{ icon: Users, label: 'Çevrimiçi oyuncular', value: measured(onlineCount), unit: `/ ${measured(data.server.maxPlayers)}`, foot: `${measured(totalCount)} ${totalLabel}`, color: '#b8df91', badge: live ? 'Canlı' : 'SSH taraması', seed: 0 }, { icon: Cpu, label: 'İşlemci kullanımı', value: measured(metrics.cpu), unit: '%', foot: typeof metrics.cpu === 'number' ? 'CPU yükü' : 'Ölçüm doğrulanamadı', color: '#a6b1d5', badge: live ? 'Anlık' : 'SSH taraması', seed: 1 }, { icon: MemoryStick, label: 'Sunucu belleği', value: measured(metrics.memory), unit: `/ ${measured(metrics.memoryTotal)} GB`, foot: memoryRatio === null ? 'Bellek sınırı doğrulanamadı' : `%${memoryRatio} kullanımda`, color: '#c3b09a', badge: 'RAM', seed: 2 }, { icon: Activity, label: 'Sunucu performansı', value: live ? measured(metrics.tps) : '—', unit: data.server.game === 'minecraft' ? 'TPS' : 'tick/sn', foot: data.server.demo ? 'Örnek telemetri' : live ? 'Köprü telemetrisi' : 'Canlı köprü bağlantısı bekleniyor', color: '#b8cbb8', badge: !live ? 'Bekleniyor' : metrics.tps >= 19 ? 'Sağlıklı' : 'İzleniyor', seed: 3 }];
- return <>{data.discovery && <section className="panel discovery-panel"><div className="panel-heading"><div><Search size={19}/><h3>Mevcut sunucu taraması</h3></div><button className="button secondary small" disabled={!canManage || busy} onClick={() => action(`/api/servers/${data.server.id}/inspect`, 'POST', undefined, 'SSH taraması güncellendi.')}><RefreshCw size={16}/> Yeniden tara</button></div><div className="discovery-panel-body"><DiscoverySummary server={data.discovery}/><p className="field-help">Kaynak: salt okunur SSH taraması · {data.observedAt || data.discovery.observedAt ? new Date(data.observedAt || data.discovery.observedAt!).toLocaleString('tr-TR') : 'Tarama zamanı sağlanmadı'}. “—” doğrulanamayan bilgiyi belirtir.</p></div></section>}{!live && <div className="notice"><Wifi size={16}/>Canlı telemetri için oyun köprüsünü bağla. Henüz ölçüm alınmadı.</div>}<div className="stats-grid">{cards.map(card => <div className="stat-card" key={card.label}><div className="stat-top"><span><card.icon size={16}/>{card.label}</span><MoreHorizontal size={17}/></div><div className="stat-value">{card.value}<span>{card.unit}</span></div><div className="stat-bottom"><span>{card.seed === 0 && <span className="status-dot"/>}{card.foot}</span><span className={`stat-badge ${card.seed === 3 ? 'positive' : ''}`}>{card.badge}</span></div>{data.server.demo && <Sparkline color={card.color} seed={card.seed}/>}</div>)}</div>
- <div className="dashboard-grid"><section className="panel dashboard-console"><div className="panel-heading"><div><span className="panel-icon"><Terminal size={17}/></span><h3>Canlı konsol</h3><span className="live-label"><span className="status-dot"/> CANLI</span></div><button className="text-button" onClick={() => setTab('console')}>Konsolu aç <ArrowUpRight size={14}/></button></div><ConsolePanel compact lines={data.console || []} onCommand={command => action(`/api/servers/${data.server.id}/command`, 'POST', { command }, 'Komut sunucuya gönderildi.')} disabled={!canManage || busy}/></section><section className="panel server-details"><div className="panel-heading"><div><span className="panel-icon"><SlidersHorizontal size={17}/></span><h3>Sunucu bilgileri</h3></div><button className="icon-button" aria-label="Sunucu ayarlarını aç" onClick={() => setTab('settings')}><ArrowUpRight size={16}/></button></div><div className="details-content"><div className="detail-item"><span>Oyun türü</span><strong><span className="tiny-game-icon"><Gamepad2 size={13}/></span>{gameNames[data.server.game]}</strong></div><div className="detail-item"><span>Sunucu yazılımı</span><strong>{capitalize(data.server.edition || '—')} <span className="mini-tag">{data.server.version}</span></strong></div><div className="detail-item"><span>Çalışma süresi</span><strong><Clock3 size={13}/>{typeof metrics.uptime === 'number' ? duration(metrics.uptime) : 'Ölçüm bekleniyor'}</strong></div><div className="detail-item"><span>Yüklü modlar</span><button className="inline-link" onClick={() => setTab('mods')}>{data.mods?.length || 0} mod <ChevronRight size={13}/></button></div><div className="storage-usage"><div><span><HardDrive size={14}/> Disk kullanımı</span><strong>{measured(metrics.disk)} <small>/ {measured(metrics.diskTotal)} GB</small></strong></div><div className="progress-track"><span style={{ width: `${Math.min(100, metrics.disk / metrics.diskTotal * 100) || 0}%` }}/></div><p>{typeof metrics.diskTotal === 'number' && typeof metrics.disk === 'number' ? `${number(metrics.diskTotal - metrics.disk)} GB boş alan` : 'Disk ölçümü bekleniyor'}</p></div></div></section>
- <section className="panel online-panel"><div className="panel-heading"><div><span className="panel-icon"><Users size={17}/></span><h3>Çevrimiçi oyuncular</h3><span className="count-pill">{measured(onlineCount)}</span></div><button className="text-button" onClick={() => setTab('players')}>Tüm oyuncular <ArrowUpRight size={14}/></button></div>{online.length ? <div className="compact-player-list">{online.slice(0, 4).map(p => <div className="compact-player" key={p.uuid}><div className="avatar-with-status"><Avatar name={p.name}/><span className="status-dot"/></div><div><strong>{p.name}</strong><span>{p.role === 'admin' ? 'Yönetici' : p.role === 'moderator' ? 'Moderatör' : 'Oyuncu'}</span></div><span className={`ping ${p.ping < 80 ? 'good' : ''}`}><Wifi size={13}/>{p.ping} ms</span><button className="icon-button" aria-label={`${p.name} ayrıntılarını aç`} onClick={() => setTab('players')}><ChevronRight size={16}/></button></div>)}</div> : <Empty title={onlineCount === null ? "Çevrimiçi oyuncu sayısı doğrulanamadı" : onlineCount > 0 ? "Oyuncu adları için canlı köprü bağlantısı gerekli" : "Şu an çevrimiçi oyuncu yok"} icon={<Users size={25}/>}/>}</section>
- <section className="panel recent-activity"><div className="panel-heading"><div><span className="panel-icon"><FileClock size={17}/></span><h3>Son işlemler</h3></div><button className="text-button" onClick={() => setTab('activity')}>Tüm geçmiş <ArrowUpRight size={14}/></button></div><div className="activity-preview">{(data.activity || []).slice(0, 4).map((a, i) => <div className="activity-preview-row" key={a.id}><span className={`activity-event-icon ${i === 0 ? 'green' : ''}`}>{a.undone ? <Undo2 size={14}/> : i % 2 ? <ShieldCheck size={14}/> : <Package size={14}/>}</span><div><strong>{a.detail || a.action}</strong><span>{a.actor}<i>·</i>{date(a.timestamp)}</span></div>{a.canUndo && canManage && <button className="icon-button" aria-label="İşlemi geri al" onClick={() => action(`/api/servers/${data.server.id}/activity/${a.id}/undo`, 'POST', undefined, 'İşlem geri alındı.')} disabled={busy}><Undo2 size={15}/></button>}</div>)}{!data.activity?.length && <Empty title="İşlemler burada görünecek"/>}</div></section></div>
- <div className="overview-note"><ShieldCheck size={17}/><span>Her işlem kayıt altında.</span><p>İşlem geçmişin {data.server.retentionDays || 90} gün saklanır. Son 3 geri alınabilir işlemi kolayca geri alabilirsin.</p><button onClick={() => setTab('activity')} className="text-button">Geçmişi görüntüle <ArrowRight size={14}/></button></div></>;
+function ConsolePanel({ lines, full, compact, onCommand, disabled }: {
+    lines: ConsoleLine[];
+    full?: boolean;
+    compact?: boolean;
+    onCommand: (command: string) => Promise<any>;
+    disabled?: boolean;
+}) {
+    const [command, setCommand] = useState(''), [filter, setFilter] = useState(''), [autoScroll, setAutoScroll] = useState(true);
+    const logRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (autoScroll && logRef.current)
+            logRef.current.scrollTop = logRef.current.scrollHeight;
+    }, [lines, autoScroll]);
+    async function submit(e: FormEvent) {
+        e.preventDefault();
+        if (!command.trim())
+            return;
+        const result = await onCommand(command.trim());
+        if (result)
+            setCommand('');
+    }
+    const visible = lines.filter(line => `${line.message} ${line.level}`.toLowerCase().includes(filter.toLowerCase()));
+    return <div className={`console-panel ${full ? 'panel full-console' : ''} ${compact ? 'compact' : ''}`}>{full && <div className="panel-heading"><div><Terminal size={17}/><h3>{t("Sunucu konsolu")}</h3>{null}</div><label className="check-label"><input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/>{" " + t("Otomatik kaydır")}</label></div>}{full && <div className="console-filter"><div className="search-input"><Search size={16}/><input placeholder={t("Konsolda ara…")} value={filter} onChange={e => setFilter(e.target.value)} aria-label={t("Konsolda ara")}/></div><span>{visible.length}{" " + t("satır")}</span></div>}<div className="console-lines" ref={logRef} role="log" aria-label={t("Sunucu konsolu")}>{visible.slice(compact ? -10 : -500).map((line, i) => <div className="console-line" key={`${line.timestamp}-${i}`}><span className="console-time">{time(line.timestamp)}</span><span className={`console-level ${(line.level || 'info').toLowerCase()}`}>{(line.level || 'INFO').toUpperCase()}</span><span className={/joined|başarı|ready|hazır|started|Done/i.test(line.message) ? 'success-message' : ''}>{line.message}</span></div>)}{!visible.length && <div className="console-idle">{t("Konsol çıktısı bekleniyor")}<span className="terminal-cursor"/></div>}</div><form className="console-command" onSubmit={submit}><ChevronRight size={17}/><input placeholder={disabled ? t("Konsol komutları için yönetici yetkisi gerekir") : 'Bir komut yaz…'} aria-label={t("Sunucu komutu")} value={command} onChange={e => setCommand(e.target.value)} maxLength={1000} disabled={disabled}/><kbd>↵</kbd><button aria-label={t("Komutu gönder")} type="submit" disabled={disabled || !command.trim()}><ArrowRight size={16}/></button></form></div>;
 }
-
-function ConsolePanel({ lines, full, compact, onCommand, disabled }: { lines: ConsoleLine[]; full?: boolean; compact?: boolean; onCommand: (command: string) => Promise<any>; disabled?: boolean }) {
- const [command, setCommand] = useState(''), [filter, setFilter] = useState(''), [autoScroll, setAutoScroll] = useState(true); const logRef = useRef<HTMLDivElement>(null);
- useEffect(() => { if (autoScroll && logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight; }, [lines, autoScroll]);
- async function submit(e: FormEvent) { e.preventDefault(); if (!command.trim()) return; const result = await onCommand(command.trim()); if (result) setCommand(''); }
- const visible = lines.filter(line => `${line.message} ${line.level}`.toLowerCase().includes(filter.toLowerCase()));
- return <div className={`console-panel ${full ? 'panel full-console' : ''} ${compact ? 'compact' : ''}`}>{full && <div className="panel-heading"><div><Terminal size={17}/><h3>Sunucu konsolu</h3><span className="live-label"><span className="status-dot"/> CANLI</span></div><label className="check-label"><input type="checkbox" checked={autoScroll} onChange={e => setAutoScroll(e.target.checked)}/> Otomatik kaydır</label></div>}{full && <div className="console-filter"><div className="search-input"><Search size={16}/><input placeholder="Konsolda ara…" value={filter} onChange={e => setFilter(e.target.value)} aria-label="Konsolda ara"/></div><span>{visible.length} satır</span></div>}<div className="console-lines" ref={logRef} role="log" aria-label="Sunucu konsolu">{visible.slice(compact ? -10 : -500).map((line, i) => <div className="console-line" key={`${line.timestamp}-${i}`}><span className="console-time">{time(line.timestamp)}</span><span className={`console-level ${(line.level || 'info').toLowerCase()}`}>{(line.level || 'INFO').toUpperCase()}</span><span className={/joined|başarı|ready|hazır|started|Done/i.test(line.message) ? 'success-message' : ''}>{line.message}</span></div>)}{!visible.length && <div className="console-idle">Konsol çıktısı bekleniyor<span className="terminal-cursor"/></div>}</div><form className="console-command" onSubmit={submit}><ChevronRight size={17}/><input placeholder={disabled ? 'Konsol komutları için yönetici yetkisi gerekir' : 'Bir komut yaz…'} aria-label="Sunucu komutu" value={command} onChange={e => setCommand(e.target.value)} maxLength={1000} disabled={disabled}/><kbd>↵</kbd><button aria-label="Komutu gönder" type="submit" disabled={disabled || !command.trim()}><ArrowRight size={16}/></button></form></div>;
+function Chat({ data, action, canManage, busy }: {
+    data: ServerData;
+    action: (...args: any[]) => Promise<any>;
+    canManage: boolean;
+    busy: boolean;
+}) {
+    const [filter, setFilter] = useState('all'), [query, setQuery] = useState(''), [player, setPlayer] = useState(''), [recipient, setRecipient] = useState(''), [message, setMessage] = useState('');
+    const feed = useRef<HTMLDivElement>(null);
+    const messages = data.chat.filter(m => (filter === 'all' || filter === 'player' || m.type === filter) && (!player || m.player === player || filter === 'whisper' && m.recipient === player) && (!recipient || m.player === recipient || m.recipient === recipient) && `${m.message} ${m.player}`.toLowerCase().includes(query.toLowerCase()));
+    useEffect(() => {
+        if (feed.current)
+            feed.current.scrollTop = feed.current.scrollHeight;
+    }, [data.chat.length, filter]);
+    async function submit(event: FormEvent) {
+        event.preventDefault();
+        const result = await action(`/api/servers/${data.server.id}/chat`, 'POST', { message }, t("Mesaj sunucuya gönderildi."));
+        if (result)
+            setMessage('');
+    }
+    return <section className="panel chat-panel"><div className="chat-toolbar"><div className="filter-tabs">{[{ id: 'all', text: t("Tüm mesajlar") }, { id: 'global', text: t("Genel sohbet") }, { id: 'player', text: t("Oyuncu") }, { id: 'whisper', text: t("Fısıltılar") }, { id: 'command', text: 'Komutlar' }].map(f => <button className={filter === f.id ? 'active' : ''} key={f.id} onClick={() => { setFilter(f.id); setPlayer(''); setRecipient(''); }}>{f.id === 'command' ? <Terminal size={14}/> : f.id === 'whisper' ? <LockKeyhole size={14}/> : f.id === 'all' ? <MessageSquare size={14}/> : f.id === 'player' ? <Users size={14}/> : <Hash size={14}/>}{f.text}</button>)}</div>{null}</div><div className="chat-filters"><div className="search-input"><Search size={16}/><input placeholder={t("Mesajlarda ara…")} value={query} onChange={e => setQuery(e.target.value)} aria-label={t("Sohbet mesajlarını ara")}/></div>{(filter === 'player' || filter === 'whisper') && <select className="form-select" value={player} onChange={e => setPlayer(e.target.value)} aria-label={t("Oyuncuyu seç")}><option value="">{filter === 'whisper' ? t("Birinci oyuncu") : t("Tüm oyuncular")}</option>{data.players.map(p => <option key={p.uuid}>{p.name}</option>)}</select>}{filter === 'whisper' && <><ArrowRight size={15}/><select className="form-select" value={recipient} onChange={e => setRecipient(e.target.value)} aria-label={t("İkinci oyuncu")}><option value="">{t("İkinci oyuncu")}</option>{data.players.filter(p => p.name !== player).map(p => <option key={p.uuid}>{p.name}</option>)}</select></>}</div><div className="chat-feed" ref={feed} role="log" aria-label={t("Oyun içi sohbet")}><div className="chat-day-divider"><span />{messages.length}{" " + t("MESAJ")}<span /></div>{messages.map(m => <div className={`chat-message ${m.type === 'command' ? 'command-message' : ''}`} key={m.id}>{m.type === 'command' ? <span className="avatar command-avatar"><Terminal size={17}/></span> : <Avatar name={m.player}/>}<div className="chat-message-content"><div className="chat-meta"><strong>{m.player}</strong>{m.type === 'whisper' ? <span className="whisper-label"><LockKeyhole size={10}/>{m.recipient}{" " + t("kişisine fısıltı")}</span> : m.type === 'command' ? <span className="command-label">{t("KOMUT")}</span> : <span className="channel-label">{t("# genel")}</span>}<time>{time(m.timestamp)}</time></div><p>{m.message}</p></div></div>)}{!messages.length && <Empty icon={<MessageSquare size={28}/>} title={t("Bu filtrede mesaj yok")} description={t("Başka bir oyuncu veya sohbet türü seçebilirsin.")}/>}</div><form className="chat-compose" onSubmit={submit}><span className="compose-prefix"><ShieldCheck size={16}/>{" " + t("PANEL")}</span><input placeholder={canManage ? t("Oyun içi sohbete bir mesaj gönder…") : t("Bu hesabın sohbet gönderme yetkisi yok")} aria-label={t("Oyun içi mesaj")} value={message} onChange={e => setMessage(e.target.value)} required maxLength={500} disabled={!canManage || busy}/><button className="button primary small" disabled={!canManage || busy || !message.trim()}><Send size={14}/>{" " + t("Gönder")}</button></form><div className="chat-privacy"><LockKeyhole size={12}/>{" " + t("Fısıltılar yalnızca oyun köprüsü tarafından sağlandığında görünür. Erişimler panel yetkileriyle sınırlandırılır.")}</div></section>;
 }
-
-function Players({ data, api, action, notify, canManage, isAdmin, busy, copy }: { data: ServerData; api: <T>(path: string, method?: string, body?: unknown) => Promise<T>; action: (...args: any[]) => Promise<any>; notify: (message: string, error?: boolean) => void; canManage: boolean; isAdmin: boolean; busy: boolean; copy: (value: string) => void }) {
- const [query, setQuery] = useState(''), [status, setStatus] = useState('all'), [sort, setSort] = useState('online'), [player, setPlayer] = useState<Player | null>(null), [inventory, setInventory] = useState<Inventory | null>(null), [provider, setProvider] = useState('main'), [loadingInventory, setLoadingInventory] = useState(false), [editingSlot, setEditingSlot] = useState<number | null>(null);
- const players = data.players.filter(p => `${p.name} ${p.uuid}`.toLowerCase().includes(query.toLowerCase()) && (status === 'all' || status === 'online' && p.online || status === 'offline' && !p.online || status === 'banned' && p.banned)).sort((a, b) => sort === 'name' ? a.name.localeCompare(b.name) : sort === 'ping' ? a.ping - b.ping : sort === 'playTime' ? b.playTime - a.playTime : Number(b.online) - Number(a.online) || a.name.localeCompare(b.name));
- async function openInventory(target: Player, providerId = 'main') { setLoadingInventory(true); setInventory(null); setProvider(providerId); setPlayer(target); setEditingSlot(null); try { setInventory(await api<Inventory>(`/api/servers/${data.server.id}/players/${target.uuid}/inventory?provider=${encodeURIComponent(providerId)}`)); } catch (e) { notify((e as Error).message, true); } finally { setLoadingInventory(false); } }
- const providers = (data.inventoryProviders || []).map(p => typeof p === 'string' ? { id: p, name: p, capacity: 36, writable: false } : { ...p, name: p.name || p.label || p.id });
- const updatedPlayer = player && data.players.find(p => p.uuid === player.uuid) || player;
- return <><div className="section-summary"><span><strong>{measured(data.playerCounts?.total ?? data.discovery?.playersTotal ?? (data.bridgeConnected || data.server.demo ? data.players.length : null))}</strong> {data.discovery?.playersTotalSource === 'usercache-fallback' ? 'önbellekten tahmini oyuncu' : 'toplam oyuncu'}</span><span><i className="status-dot"/><strong>{measured(data.playerCounts?.online ?? data.discovery?.playersOnline ?? (data.bridgeConnected || data.server.demo ? data.players.filter(p => p.online).length : null))}</strong> çevrimiçi</span><span><Ban size={14}/><strong>{data.players.filter(p => p.banned).length}</strong> yasaklı</span></div><section className="panel"><div className="table-toolbar"><div className="search-input"><Search size={16}/><input placeholder="Oyuncu adı veya UUID ile ara…" aria-label="Oyuncu ara" value={query} onChange={e => setQuery(e.target.value)}/></div><div className="toolbar-right"><select className="form-select" aria-label="Oyuncu durumu filtresi" value={status} onChange={e => setStatus(e.target.value)}><option value="all">Tüm oyuncular</option><option value="online">Çevrimiçi</option><option value="offline">Çevrimdışı</option><option value="banned">Yasaklı</option></select><select className="form-select" aria-label="Oyuncuları sırala" value={sort} onChange={e => setSort(e.target.value)}><option value="online">Duruma göre</option><option value="name">Ada göre</option><option value="ping">Pinge göre</option><option value="playTime">Oynama süresine göre</option></select></div></div><div className="table-scroll"><table><thead><tr><th>OYUNCU</th><th>DURUM</th><th>PİNG</th><th>TOPLAM OYNAMA</th><th>UUID</th><th>YETKİ</th><th/></tr></thead><tbody>{players.map(p => <tr key={p.uuid}><td><button className="player-name-button" onClick={() => setPlayer(p)}><Avatar name={p.name}/><strong>{p.name}</strong>{p.banned && <Ban size={13} className="red-text"/>}</button></td><td><Status online={p.online}/></td><td><span className={`ping ${p.online && p.ping < 80 ? 'good' : ''}`}><Wifi size={13}/>{p.online ? `${p.ping} ms` : '—'}</span></td><td className="mono">{duration(p.playTime)}</td><td><button className="uuid-copy" onClick={() => copy(p.uuid)} title={p.uuid}>{p.uuid.slice(0, 8)}…{p.uuid.slice(-4)}<Copy size={12}/></button></td><td><span className={`role-tag ${p.role}`}>{p.role === 'admin' ? 'Yönetici' : p.role === 'moderator' ? 'Moderatör' : 'Oyuncu'}</span></td><td><button className="icon-button" aria-label={`${p.name} işlemleri`} onClick={() => setPlayer(p)}><Ellipsis size={18}/></button></td></tr>)}</tbody></table>{!players.length && <Empty icon={<Users size={28}/>} title="Oyuncu bulunamadı" description="Arama veya durum filtresini değiştirebilirsin."/>}</div><div className="table-footer"><span>{players.length} oyuncu gösteriliyor</span><span>Oyuncu verileri oyun köprüsünden alınır <ShieldCheck size={13}/></span></div></section>
- {updatedPlayer && <Modal title={updatedPlayer.name} subtitle="Oyuncu ayrıntıları ve yönetim" onClose={() => { setPlayer(null); setInventory(null); }} wide={!!inventory}><div className="player-detail-header"><Avatar name={updatedPlayer.name} size="large"/><div><Status online={updatedPlayer.online}/><p className="mono">{updatedPlayer.uuid}</p><button className="text-button" onClick={() => copy(updatedPlayer.uuid)}><Copy size={12}/> UUID kopyala</button></div></div><div className="detail-stat-grid"><div><span>Ping</span><strong>{updatedPlayer.online ? `${updatedPlayer.ping} ms` : '—'}</strong></div><div><span>Toplam oynama</span><strong>{duration(updatedPlayer.playTime)}</strong></div><div><span>Hesap durumu</span><strong className={updatedPlayer.banned ? 'red-text' : ''}>{updatedPlayer.banned ? 'Yasaklı' : 'Normal'}</strong></div></div><div className="form-stack"><label>Oyuncu yetkisi<select value={updatedPlayer.role} disabled={!isAdmin || busy} onChange={e => action(`/api/servers/${data.server.id}/players/${updatedPlayer.uuid}`, 'PATCH', { role: e.target.value }, 'Oyuncu yetkisi güncellendi.')}><option value="player">Oyuncu</option><option value="moderator">Moderatör</option><option value="admin">Yönetici</option></select></label><div className="button-row"><button className={`button ${updatedPlayer.banned ? 'secondary' : 'danger-outline'}`} disabled={!canManage || busy} onClick={() => action(`/api/servers/${data.server.id}/players/${updatedPlayer.uuid}`, 'PATCH', { banned: !updatedPlayer.banned }, updatedPlayer.banned ? 'Oyuncunun yasağı kaldırıldı.' : 'Oyuncu yasaklandı.')}><Ban size={15}/>{updatedPlayer.banned ? 'Yasağı kaldır' : 'Oyuncuyu yasakla'}</button><button className="button secondary" disabled={loadingInventory || !providers.length} onClick={() => openInventory(updatedPlayer)}>{loadingInventory ? <LoaderCircle size={15} className="spin"/> : <Package size={15}/>} Envanteri aç</button></div></div>
- {loadingInventory && <Loading/>}{inventory && <div className="inventory-section"><div className="inventory-heading"><h3><Package size={17}/> Oyuncu envanteri</h3><select className="form-select" value={provider} aria-label="Envanter türü" onChange={e => openInventory(updatedPlayer, e.target.value)}>{providers.map(p => <option key={p.id} value={p.id}>{p.name}{p.mod ? ` · ${p.mod}` : ''}</option>)}</select></div><p className="field-help">{providers.find(p => p.id === provider)?.mod ? `Bu envanter ${providers.find(p => p.id === provider)?.mod} oyun köprüsü sağlayıcısıyla açıldı.` : 'Eşya adını ve miktarını düzenlemek için bir yuvaya tıkla.'}</p><div className="inventory-grid">{Array.from({ length: inventory.capacity || 36 }, (_, slot) => { const item = inventory.slots.find(s => s.slot === slot); return <button key={slot} disabled={!inventory.writable || !canManage} title={item ? `${item.item} × ${item.count}` : `Boş yuva ${slot + 1}`} className={`inventory-slot ${editingSlot === slot ? 'selected' : ''}`} onClick={() => setEditingSlot(slot)}><small>{slot + 1}</small>{item && item.count > 0 && <><Package size={25}/><span className="inventory-item-label">{item.item.split(':').pop()?.replaceAll('_', ' ').slice(0, 13)}</span><b>{item.count}</b></>}</button>; })}</div>{editingSlot !== null && <div className="slot-editor"><label>Eşya kimliği<input aria-label="Eşya kimliği" value={inventory.slots.find(s => s.slot === editingSlot)?.item || ''} placeholder="minecraft:diamond" onChange={e => { const current = inventory.slots.find(s => s.slot === editingSlot); setInventory({ ...inventory, slots: [...inventory.slots.filter(s => s.slot !== editingSlot), { ...(current?.item === e.target.value ? current : {}), slot: editingSlot, item: e.target.value, count: current?.count || 1 }] }); }}/></label><label>Adet<input type="number" min="0" max="64" value={inventory.slots.find(s => s.slot === editingSlot)?.count ?? 0} onChange={e => { const current = inventory.slots.find(s => s.slot === editingSlot); setInventory({ ...inventory, slots: [...inventory.slots.filter(s => s.slot !== editingSlot), { ...current, slot: editingSlot, item: current?.item || '', count: Number(e.target.value) }] }); }}/></label></div>}<div className="modal-actions"><span className="field-help">{inventory.capacity} yuva · {inventory.writable ? 'Düzenlenebilir' : 'Salt okunur'}</span><button className="button primary" disabled={!inventory.writable || !canManage || busy} onClick={() => action(`/api/servers/${data.server.id}/players/${updatedPlayer.uuid}/inventory?provider=${encodeURIComponent(provider)}`, 'PUT', { slots: inventory.slots.filter(s => s.count > 0 && s.item.trim()) }, 'Envanter kaydedildi.')}><Check size={15}/> Değişiklikleri kaydet</button></div></div>}
- </Modal>}</>;
+export function CurseForgeSettings({ server, api, notify, isAdmin }: {
+    server: ServerInfo;
+    api: <T>(path: string, method?: string, body?: unknown) => Promise<T>;
+    notify: (message: string, error?: boolean) => void;
+    isAdmin: boolean;
+}) {
+    const [key, setKey] = useState(''), [configured, setConfigured] = useState(!!server.curseforgeConfigured), [busy, setBusy] = useState(false);
+    useEffect(() => { setKey(''); setConfigured(!!server.curseforgeConfigured); }, [server.id, server.curseforgeConfigured]);
+    async function save(clear = false) {
+        setBusy(true);
+        try {
+            await api(`/api/servers/${server.id}/connection`, 'PATCH', clear ? { clearCurseforgeApiKey: true } : { curseforgeApiKey: key.trim() });
+            setConfigured(!clear);
+            setKey('');
+            notify(clear ? t("CurseForge API anahtarı kaldırıldı.") : t("CurseForge API anahtarı kaydedildi. Mod keşfet sekmesinden kataloğu açabilirsin."));
+        }
+        catch (e) {
+            notify((e as Error).message, true);
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    return <div className="bridge-form curseforge-settings"><div><KeyRound size={19}/><strong>{t("CurseForge kataloğu")}</strong><span className="tag">{configured ? t("ANAHTAR AYARLANMIŞ") : t("ANAHTAR GEREKLİ")}</span></div><p>{t("CurseForge mod araması ve yüklemesi için API anahtarını ekle. Anahtar sunucuda şifrelenerek saklanır ve yanıtlarda gösterilmez.")}</p><label>{t("CurseForge API anahtarı")}<input type="password" autoComplete="new-password" value={key} disabled={!isAdmin || busy} maxLength={512} placeholder={configured ? t("Değiştirmek için yeni anahtarı gir") : t("CurseForge API anahtarın")} onChange={e => setKey(e.target.value)}/></label><div className="button-row"><button type="button" className="button secondary" disabled={!isAdmin || busy || !key.trim()} onClick={() => save()}>{busy ? <LoaderCircle className="spin" size={16}/> : <Check size={16}/>}{" " + t("Anahtarı kaydet")}</button>{configured && <button type="button" className="button secondary" disabled={!isAdmin || busy} onClick={() => save(true)}><Trash2 size={16}/>{" " + t("Anahtarı kaldır")}</button>}</div></div>;
 }
-
-function Chat({ data, action, canManage, busy }: { data: ServerData; action: (...args: any[]) => Promise<any>; canManage: boolean; busy: boolean }) {
- const [filter, setFilter] = useState('all'), [query, setQuery] = useState(''), [player, setPlayer] = useState(''), [recipient, setRecipient] = useState(''), [message, setMessage] = useState(''); const feed = useRef<HTMLDivElement>(null);
- const messages = data.chat.filter(m => (filter === 'all' || filter === 'player' || m.type === filter) && (!player || m.player === player || filter === 'whisper' && m.recipient === player) && (!recipient || m.player === recipient || m.recipient === recipient) && `${m.message} ${m.player}`.toLowerCase().includes(query.toLowerCase()));
- useEffect(() => { if (feed.current) feed.current.scrollTop = feed.current.scrollHeight; }, [data.chat.length, filter]);
- async function submit(event: FormEvent) { event.preventDefault(); const result = await action(`/api/servers/${data.server.id}/chat`, 'POST', { message }, 'Mesaj sunucuya gönderildi.'); if (result) setMessage(''); }
- return <section className="panel chat-panel"><div className="chat-toolbar"><div className="filter-tabs">{[{ id: 'all', text: 'Tüm mesajlar' }, { id: 'global', text: 'Genel sohbet' }, { id: 'player', text: 'Oyuncu' }, { id: 'whisper', text: 'Fısıltılar' }, { id: 'command', text: 'Komutlar' }].map(f => <button className={filter === f.id ? 'active' : ''} key={f.id} onClick={() => { setFilter(f.id); setPlayer(''); setRecipient(''); }}>{f.id === 'command' ? <Terminal size={14}/> : f.id === 'whisper' ? <LockKeyhole size={14}/> : f.id === 'all' ? <MessageSquare size={14}/> : f.id === 'player' ? <Users size={14}/> : <Hash size={14}/>}{f.text}</button>)}</div><span className="live-label"><span className="status-dot"/> {data.server.demo ? 'DEMO AKIŞI' : '10 SN’DE GÜNCELLENİR'}</span></div><div className="chat-filters"><div className="search-input"><Search size={16}/><input placeholder="Mesajlarda ara…" value={query} onChange={e => setQuery(e.target.value)} aria-label="Sohbet mesajlarını ara"/></div>{(filter === 'player' || filter === 'whisper') && <select className="form-select" value={player} onChange={e => setPlayer(e.target.value)} aria-label="Oyuncuyu seç"><option value="">{filter === 'whisper' ? 'Birinci oyuncu' : 'Tüm oyuncular'}</option>{data.players.map(p => <option key={p.uuid}>{p.name}</option>)}</select>}{filter === 'whisper' && <><ArrowRight size={15}/><select className="form-select" value={recipient} onChange={e => setRecipient(e.target.value)} aria-label="İkinci oyuncu"><option value="">İkinci oyuncu</option>{data.players.filter(p => p.name !== player).map(p => <option key={p.uuid}>{p.name}</option>)}</select></>}</div><div className="chat-feed" ref={feed} role="log" aria-label="Oyun içi sohbet"><div className="chat-day-divider"><span/>{messages.length} MESAJ<span/></div>{messages.map(m => <div className={`chat-message ${m.type === 'command' ? 'command-message' : ''}`} key={m.id}>{m.type === 'command' ? <span className="avatar command-avatar"><Terminal size={17}/></span> : <Avatar name={m.player}/>}<div className="chat-message-content"><div className="chat-meta"><strong>{m.player}</strong>{m.type === 'whisper' ? <span className="whisper-label"><LockKeyhole size={10}/>{m.recipient} kişisine fısıltı</span> : m.type === 'command' ? <span className="command-label">KOMUT</span> : <span className="channel-label"># genel</span>}<time>{time(m.timestamp)}</time></div><p>{m.message}</p></div></div>)}{!messages.length && <Empty icon={<MessageSquare size={28}/>} title="Bu filtrede mesaj yok" description="Başka bir oyuncu veya sohbet türü seçebilirsin."/>}</div><form className="chat-compose" onSubmit={submit}><span className="compose-prefix"><ShieldCheck size={16}/> PANEL</span><input placeholder={canManage ? 'Oyun içi sohbete bir mesaj gönder…' : 'Bu hesabın sohbet gönderme yetkisi yok'} aria-label="Oyun içi mesaj" value={message} onChange={e => setMessage(e.target.value)} required maxLength={500} disabled={!canManage || busy}/><button className="button primary small" disabled={!canManage || busy || !message.trim()}><Send size={14}/> Gönder</button></form><div className="chat-privacy"><LockKeyhole size={12}/> Fısıltılar yalnızca oyun köprüsü tarafından sağlandığında görünür. Erişimler panel yetkileriyle sınırlandırılır.</div></section>;
-}
-
-function ActivityPanel({ data, action, canManage, isAdmin, busy }: { data: ServerData; action: (...args: any[]) => Promise<any>; canManage: boolean; isAdmin: boolean; busy: boolean }) {
- const [query, setQuery] = useState(''), [actor, setActor] = useState(''), [confirm, setConfirm] = useState<Audit | null>(null);
- const actors = Array.from(new Set(data.activity.map(a => a.actor))), filtered = data.activity.filter(a => (!actor || a.actor === actor) && `${a.action} ${a.detail} ${a.actor}`.toLowerCase().includes(query.toLowerCase()));
- return <><div className="undo-info"><span className="undo-info-icon"><Undo2 size={22}/></span><div><h3>Son 3 işlem için bir adım geri.</h3><p>Geri alınabilir son 3 işlemin, en yeniden başlayarak geri alınır. Her geri alma da geçmişe kaydedilir.</p></div><label className="switch-label"><span>Geri alma {data.server.undoEnabled ? 'açık' : 'kapalı'}</span><input type="checkbox" role="switch" checked={!!data.server.undoEnabled} disabled={!isAdmin || busy} onChange={e => action(`/api/servers/${data.server.id}/settings`, 'PATCH', { undoEnabled: e.target.checked }, 'Geri alma tercihi güncellendi.')}/><i/></label></div><section className="panel"><div className="table-toolbar"><div className="search-input"><Search size={16}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="İşlem geçmişinde ara…" aria-label="İşlem geçmişinde ara"/></div><div className="toolbar-right"><select className="form-select" value={actor} onChange={e => setActor(e.target.value)} aria-label="Panel kullanıcısı filtresi"><option value="">Tüm kullanıcılar</option>{actors.map(name => <option key={name}>{name}</option>)}</select><span className="retention-label"><Clock3 size={14}/>{data.server.retentionDays || 90} gün saklanır</span></div></div><div className="table-scroll"><table className="activity-table"><thead><tr><th>İŞLEM</th><th>PANEL KULLANICISI</th><th>TARİH VE SAAT</th><th>DURUM</th><th/></tr></thead><tbody>{filtered.map(a => <tr key={a.id}><td><div className="audit-action"><span className={`activity-event-icon ${a.undone ? '' : 'green'}`}>{a.undone ? <Undo2 size={15}/> : <Activity size={15}/>}</span><div><strong>{a.action}</strong><span>{a.detail}</span></div></div></td><td><div className="table-user"><Avatar name={a.actor} size="tiny"/>{a.actor}</div></td><td className="mono">{date(a.timestamp)}</td><td><span className={`audit-status ${a.undone ? 'undone' : ''}`}>{a.undone ? 'Geri alındı' : 'Tamamlandı'}</span></td><td>{a.canUndo && data.server.undoEnabled && canManage ? <button className="button secondary small" disabled={busy} onClick={() => setConfirm(a)}><Undo2 size={14}/> Geri al</button> : <span className="muted">—</span>}</td></tr>)}</tbody></table>{!filtered.length && <Empty icon={<FileClock size={28}/>} title="Henüz eşleşen işlem yok"/>}</div><div className="table-footer"><span>{filtered.length} işlem</span><span><ShieldCheck size={13}/> Kullanıcı ve zaman bilgisi sunucu tarafında kaydedilir</span></div></section>{confirm && <Modal title="Bu işlem geri alınsın mı?" subtitle="Önceki durum yeniden uygulanacak ve geri alma geçmişe kaydedilecek." onClose={() => setConfirm(null)}><div className="confirm-detail"><strong>{confirm.action}</strong><p>{confirm.detail}</p><span>{confirm.actor} · {date(confirm.timestamp)}</span></div><div className="modal-actions"><button className="button secondary" onClick={() => setConfirm(null)}>Vazgeç</button><button className="button primary" disabled={busy} onClick={async () => { const result = await action(`/api/servers/${data.server.id}/activity/${confirm.id}/undo`, 'POST', undefined, 'İşlem geri alındı.'); if (result) setConfirm(null); }}><Undo2 size={15}/> İşlemi geri al</button></div></Modal>}</>;
-}
-
-function Redeem({ api, onSuccess, notify }: { api: <T>(path: string, method?: string, body?: unknown) => Promise<T>; onSuccess: () => void; notify: (message: string, error?: boolean) => void }) { const [code, setCode] = useState(''), [busy, setBusy] = useState(false); async function submit(e: FormEvent) { e.preventDefault(); setBusy(true); try { await api('/api/invites/redeem', 'POST', { code }); setCode(''); notify('Davet kabul edildi. Sunucu çalışma alanına eklendi.'); onSuccess(); } catch (e) { notify((e as Error).message, true); } finally { setBusy(false); } } return <form className="redeem-form" onSubmit={submit}><label htmlFor="redeem-code">Bir arkadaşının sunucusuna mı katılıyorsun?</label><div><input id="redeem-code" placeholder="48 karakterli erişim kodu" minLength={48} maxLength={48} required value={code} onChange={e => setCode(e.target.value.trim())}/><button className="button secondary" disabled={busy}><Link2 size={15}/> Katıl</button></div></form>; }
-
-function Settings({ data, api, action, notify, isAdmin, copy, onServerAdded }: { data: ServerData; api: <T>(path: string, method?: string, body?: unknown) => Promise<T>; action: (...args: any[]) => Promise<any>; notify: (message: string, error?: boolean) => void; isAdmin: boolean; copy: (value: string) => void; onServerAdded: () => void }) {
- const [retention, setRetention] = useState(data.server.retentionDays || 90), [role, setRole] = useState('viewer'), [invites, setInvites] = useState<Invite[]>([]), [code, setCode] = useState(''), [busy, setBusy] = useState(false), [inviteError, setInviteError] = useState('');
- useEffect(() => { setRetention(data.server.retentionDays || 90); }, [data.server.retentionDays]);
- async function loadInvites() { if (!isAdmin) return; try { const response = await api<any>(`/api/servers/${data.server.id}/invites`); setInvites(Array.isArray(response) ? response : response.invites || []); } catch (e) { setInviteError((e as Error).message); } }
- useEffect(() => { loadInvites(); }, [data.server.id, isAdmin]);
- async function create() { setBusy(true); try { const response = await api<any>(`/api/servers/${data.server.id}/invites`, 'POST', { role }); setCode(response.code || response.token || ''); notify('Yeni erişim kodu oluşturuldu. Kodu şimdi kopyala.'); await loadInvites(); } catch (e) { notify((e as Error).message, true); } finally { setBusy(false); } }
- return <div className="settings-grid"><section className="panel settings-card"><div className="panel-heading"><div><Server size={17}/><h3>Bağlantı bilgileri</h3></div><span className="tag">{data.server.demo ? 'DEMO' : 'SSH'}</span></div><div className="form-stack"><label>Sunucu adı<input readOnly value={data.server.name}/></label><div className="form-grid"><label>Sunucu türü<input readOnly value={`${gameNames[data.server.game]} · ${capitalize(data.server.edition)}`}/></label><label>Oyun sürümü<input readOnly value={data.server.version}/></label></div><label>SSH adresi<input readOnly value={data.server.connection?.host || (data.server.demo ? 'demo.ssp.local' : 'Ayarlanmamış')}/></label><div className="form-grid"><label>SSH portu<input readOnly value={data.server.connection?.port || 22}/></label><label>SSH kullanıcısı<input readOnly value={data.server.connection?.username || '—'}/></label></div><p className="field-help"><LockKeyhole size={13}/> Parolalar ve özel anahtarlar API yanıtlarında gösterilmez.</p><div className="permission-note"><ShieldCheck size={16}/><div><strong>Bu paneldeki yetkin: {data.server.permissions}</strong><p>Sunucuya erişim ve işlemler sunucu tarafında doğrulanır.</p></div></div>{!data.server.demo && <BridgeSettings server={data.server} api={api} notify={notify} isAdmin={isAdmin}/>}<CurseForgeSettings server={data.server} api={api} notify={notify} isAdmin={isAdmin}/></div></section><section className="panel settings-card"><div className="panel-heading"><div><FileClock size={17}/><h3>İşlem geçmişi</h3></div></div><div className="form-stack"><div className="setting-description"><h3>Her işlemin izi kalsın.</h3><p>İşlemleri yapan panel kullanıcısı ve tarih bilgisiyle birlikte sakla. Süresi dolan kayıtlar otomatik temizlenir.</p></div><label>Geçmiş saklama süresi<select value={retention} disabled={!isAdmin} onChange={e => setRetention(Number(e.target.value))}><option value={7}>7 gün</option><option value={30}>30 gün</option><option value={90}>90 gün · Varsayılan (3 ay)</option><option value={180}>180 gün</option><option value={365}>365 gün</option>{![7,30,90,180,365].includes(retention) && <option value={retention}>{retention} gün</option>}</select></label><label className="switch-label setting-switch"><div><strong>Son 3 işlemi geri al</strong><p>Geri alınabilir işlemleri en yeniden başlayarak geri al.</p></div><input type="checkbox" role="switch" checked={data.server.undoEnabled} disabled={!isAdmin} onChange={e => action(`/api/servers/${data.server.id}/settings`, 'PATCH', { undoEnabled: e.target.checked }, 'Geri alma ayarı kaydedildi.')}/><i/></label><div className="modal-actions"><button className="button primary" disabled={!isAdmin || retention === data.server.retentionDays} onClick={() => action(`/api/servers/${data.server.id}/settings`, 'PATCH', { retentionDays: retention }, 'Saklama süresi güncellendi.')}><Check size={15}/> Tercihleri kaydet</button></div></div></section>
- <section className="panel settings-card access-settings"><div className="panel-heading"><div><KeyRound size={17}/><h3>Erişim ve davetler</h3></div><span className="tag">48 KARAKTER</span></div><div className="form-stack"><div className="setting-description"><h3>Ekibini aynı panelde buluştur.</h3><p>Rastgele oluşturulan, süreli erişim kodunu bir arkadaşınla paylaş. Her panel kullanıcısının işlemi kendi adıyla kaydedilir.</p></div>{isAdmin ? <><div className="invite-create"><label>Verilecek yetki<select value={role} onChange={e => setRole(e.target.value)}><option value="viewer">İzleyici · Yalnızca görüntüle</option><option value="operator">Operatör · Sunucuyu yönet</option><option value="admin">Yönetici · Erişimleri yönet</option></select></label><button className="button primary" onClick={create} disabled={busy}><Plus size={15}/> Erişim kodu oluştur</button></div>{code && <div className="generated-code"><span>BU KOD YALNIZCA BİR KEZ GÖSTERİLİR</span><div><input readOnly aria-label="Oluşturulan davet kodu" value={code}/><button className="icon-button" aria-label="Davet kodunu kopyala" onClick={() => copy(code)}><Copy size={17}/></button></div><p>Kodu güvenli bir yolla paylaş. Bu kod seçilen yetkiyle sunucu erişimi verir.</p></div>}{inviteError && <div className="notice error">{inviteError}</div>}<div className="invite-list">{invites.map(invite => <div key={invite.id}><KeyRound size={15}/><div><strong>{invite.role === 'admin' ? 'Yönetici' : invite.role === 'operator' ? 'Operatör' : 'İzleyici'}</strong><span>Son kullanım: {date(invite.expires)}{invite.revoked ? ' · İptal edildi' : invite.redeemed ? ' · Kullanıldı' : ''}</span></div><button className="button small secondary" disabled={invite.revoked || invite.redeemed} onClick={async () => { try { await api(`/api/servers/${data.server.id}/invites/${invite.id}`, 'DELETE'); await loadInvites(); notify('Davet iptal edildi.'); } catch (e) { notify((e as Error).message, true); } }}><Trash2 size={13}/> İptal et</button></div>)}</div></> : <div className="permission-note"><Eye size={17}/><p>Davet oluşturmak için yönetici yetkisi gerekir.</p></div>}<Redeem api={api} onSuccess={onServerAdded} notify={notify}/></div></section></div>;
-}
-
-function CurseForgeSettings({ server, api, notify, isAdmin }: { server: ServerInfo; api: <T>(path: string, method?: string, body?: unknown) => Promise<T>; notify: (message: string, error?: boolean) => void; isAdmin: boolean }) {
- const [key, setKey] = useState(''), [configured, setConfigured] = useState(!!server.curseforgeConfigured), [busy, setBusy] = useState(false);
- useEffect(() => { setKey(''); setConfigured(!!server.curseforgeConfigured); }, [server.id, server.curseforgeConfigured]);
- async function save(clear = false) {
-  setBusy(true);
-  try { await api(`/api/servers/${server.id}/connection`, 'PATCH', clear ? { clearCurseforgeApiKey: true } : { curseforgeApiKey: key.trim() }); setConfigured(!clear); setKey(''); notify(clear ? 'CurseForge API anahtarı kaldırıldı.' : 'CurseForge API anahtarı kaydedildi. Mod keşfet sekmesinden kataloğu açabilirsin.'); }
-  catch (e) { notify((e as Error).message, true); }
-  finally { setBusy(false); }
- }
- return <div className="bridge-form curseforge-settings"><div><KeyRound size={19}/><strong>CurseForge kataloğu</strong><span className="tag">{configured ? 'ANAHTAR AYARLANMIŞ' : 'ANAHTAR GEREKLİ'}</span></div><p>CurseForge mod araması ve yüklemesi için API anahtarını ekle. Anahtar sunucuda şifrelenerek saklanır ve yanıtlarda gösterilmez.</p><label>CurseForge API anahtarı<input type="password" autoComplete="new-password" value={key} disabled={!isAdmin || busy} maxLength={512} placeholder={configured ? 'Değiştirmek için yeni anahtarı gir' : 'CurseForge API anahtarın'} onChange={e => setKey(e.target.value)}/></label><div className="button-row"><button type="button" className="button secondary" disabled={!isAdmin || busy || !key.trim()} onClick={() => save()}>{busy ? <LoaderCircle className="spin" size={16}/> : <Check size={16}/>} Anahtarı kaydet</button>{configured && <button type="button" className="button secondary" disabled={!isAdmin || busy} onClick={() => save(true)}><Trash2 size={16}/> Anahtarı kaldır</button>}</div></div>;
-}
-
-function BridgeSettings({ server, api, notify, isAdmin }: { server: ServerInfo; api: <T>(path: string, method?: string, body?: unknown) => Promise<T>; notify: (message: string, error?: boolean) => void; isAdmin: boolean }) {
- const [token, setToken] = useState(''), [port, setPort] = useState(server.bridgePort || 8765), [url, setUrl] = useState(''), [busy, setBusy] = useState(false);
- async function save() { setBusy(true); try { await api(`/api/servers/${server.id}/connection`, 'PATCH', { bridgePort: port, bridgeUrl: url, ...(token ? { bridgeToken: token } : {}) }); setToken(''); notify('Oyun köprüsü bağlantısı kaydedildi. Veriler otomatik güncellenecek.'); } catch (e) { notify((e as Error).message, true); } finally { setBusy(false); } }
- return <div className="bridge-form"><div><Link2 size={17}/><strong>Oyun köprüsü</strong><span className="tag">{server.bridgeConfigured ? 'AYARLANMIŞ' : 'BAĞLANTI BEKLİYOR'}</span></div><p>Adres boşken SSH tüneli kullanılır. Köprü anahtarını uzak sunucudaki SSP Bridge yapılandırmasından al.</p><div className="form-grid"><label>Köprü portu<input type="number" min="1" max="65535" value={port} disabled={!isAdmin} onChange={e => setPort(Number(e.target.value))}/></label><label>Doğrudan HTTPS adresi<input type="url" value={url} disabled={!isAdmin} placeholder="İsteğe bağlı" onChange={e => setUrl(e.target.value)}/></label></div><label>Köprü anahtarı<input type="password" autoComplete="new-password" minLength={32} maxLength={256} value={token} disabled={!isAdmin} placeholder={server.bridgeConfigured ? 'Değiştirmek için yeni anahtarı gir' : 'SSP Bridge token'} onChange={e => setToken(e.target.value)}/></label><button type="button" className="button secondary" disabled={!isAdmin || busy || (token.length > 0 && token.length < 32)} onClick={save}>{busy ? <LoaderCircle className="spin" size={14}/> : <Check size={14}/>} Köprü bağlantısını kaydet</button></div>;
+export function BridgeSettings({ server, api, notify, isAdmin }: {
+    server: ServerInfo;
+    api: <T>(path: string, method?: string, body?: unknown) => Promise<T>;
+    notify: (message: string, error?: boolean) => void;
+    isAdmin: boolean;
+}) {
+    const [token, setToken] = useState(''), [port, setPort] = useState(server.bridgePort || 8765), [url, setUrl] = useState(server.connection?.url || ''), [busy, setBusy] = useState(false);
+    async function save() {
+        setBusy(true);
+        try {
+            await api(`/api/servers/${server.id}/connection`, 'PATCH', { ...(server.connection?.type === 'bridge' ? (url.trim() ? {bridgeUrl:url.trim()} : {}) : {bridgePort:port,bridgeUrl:url}), ...(token ? { bridgeToken: token } : {}) });
+            setToken('');
+            notify(t("Oyun köprüsü bağlantısı kaydedildi. Veriler otomatik güncellenecek."));
+        }
+        catch (e) {
+            notify((e as Error).message, true);
+        }
+        finally {
+            setBusy(false);
+        }
+    }
+    return <div className="bridge-form"><div><Link2 size={17}/><strong>{t("Oyun köprüsü")}</strong><span className="tag">{server.bridgeConfigured ? t("AYARLANMIŞ") : t("BAĞLANTI BEKLİYOR")}</span></div><p>{t("Adres boşken SSH tüneli kullanılır. Köprü anahtarını uzak sunucudaki SSP Bridge yapılandırmasından al.")}</p><div className="form-grid"><label>{t("Köprü portu")}<input type="number" min="1" max="65535" value={port} disabled={!isAdmin} onChange={e => setPort(Number(e.target.value))}/></label><label>{t("Doğrudan HTTPS adresi")}<input type="url" value={url} disabled={!isAdmin} placeholder={t("İsteğe bağlı")} onChange={e => setUrl(e.target.value)}/></label></div><label>{t("Köprü anahtarı")}<input type="password" autoComplete="new-password" minLength={32} maxLength={256} value={token} disabled={!isAdmin} placeholder={server.bridgeConfigured ? t("Değiştirmek için yeni anahtarı gir") : t("SSP Bridge token")} onChange={e => setToken(e.target.value)}/></label><button type="button" className="button secondary" disabled={!isAdmin || busy || (token.length > 0 && token.length < 32)} onClick={save}>{busy ? <LoaderCircle className="spin" size={14}/> : <Check size={14}/>}{" " + t("Köprü bağlantısını kaydet")}</button></div>;
 }

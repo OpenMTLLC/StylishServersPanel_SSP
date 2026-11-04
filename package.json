@@ -1,6 +1,6 @@
 {
   "name": "stylishserverspanel-ssp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "SSP — açık kaynak oyun sunucusu yönetim paneli",
@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "express": "^5.1.0",
-    "lucide-react": "^0.468.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "ssh2": "^1.17.0"

@@ -1,10 +1,10 @@
 # SSP · Stylish Servers Panel
 
-Açık kaynak, Türkçe oyun sunucusu yönetim paneli. Pterodactyl benzeri yönetim mantığını oyuncu, sohbet ve geri alınabilir işlem araçlarıyla birleştirir. Mat siyah, metal gri ve düşük kontrastlı ikili sayı deseni kullanır.
+Mevcut uzak oyun sunucularına bağlanıp oyuncuları, sohbeti, konsolu, modları ve erişimleri yöneten açık kaynak panel. SSP yeni bir oyun sunucusu oluşturmaz. Bağlantıyı doğrular, mevcut kurulumu okur ve doğrudan yönetim alanına geçer.
 
-![SSP yönetim paneli](docs/screenshots/dashboard.png)
+![SSP giriş ekranı](docs/screenshots/login.png)
 
-## Hızlı başlangıç
+## Başlangıç
 
 Node.js **24+** ve npm gerekir.
 
@@ -16,58 +16,61 @@ npm run build
 npm start
 ```
 
-Panel: `http://127.0.0.1:3001`. İlk açılışta yönetici kullanıcı adını ve parolasını oluşturun veya **Demoyu keşfet** ile ayrı örnek ortamı açın. Demo gerçek bir sunucuya bağlanmaz.
+Panel: `http://127.0.0.1:3001`.
 
-Geliştirmede API için `npm run dev`, ayrı terminalde arayüz için `npm run dev:web` çalıştırın. Vite `http://127.0.0.1:5173` adresinde `/api` isteklerini 3001 portuna yönlendirir.
+1. **Hesap oluştur** ile panel kullanıcı adı ve parolasını belirleyin. Kendi sunucusuna bağlanan yeni kullanıcı için davet gerekmez.
+2. **Kendi sunucum** altında bağlantı türünü açın: SSH parola, SSH özel anahtar veya HTTPS SSP Bridge. Bağlantı kimlik bilgilerinin doğrulanması zorunludur.
+3. SSH kullanıyorsanız sunucu parmak izini alın ve bağımsız kaynaktan doğrulayın. Gerekiyorsa mevcut oyun sunucusunun tam dizinini belirtin. Birden fazla kurulum bulunursa dizini seçin.
+4. Mevcut kurulum bir kez taranır; yeni kurulum ekranı açılmadan panel gösterilir. Sonraki girişlerde uzak bağlantı yeniden doğrulanır, tarama tekrar çalıştırılmaz. **Yeniden tara** ile bilgileri güncelleyebilirsiniz.
 
-## Özellikler
+Başkasının sunucusuna erişmek için **Davet kodum var** seçin ve **Var olan sunucu kodu** alanına size verilen 48 karakterli kodu yazın. Bu mod SSH bilgisi istemez. Kendi sunucum seçiliyken kod alanı gösterilmez.
 
-- Birden fazla sunucu, SSH parola/anahtar bağlantısı, SHA256 sunucu parmak izi doğrulaması.
-- Kullanıcı hesabı, sunucuya göre viewer/operator/admin yetkileri, 48 karakterli tek kullanımlık davet kodu.
-- Oyuncu adı, ping, UUID, toplam oynama süresi, yeşil/gri çevrimiçi göstergesi; yasaklama ve yetki yönetimi.
-- Genel sohbet, oyuncuya göre filtre, iki kişi arasındaki fısıltılar ve komut kayıtları.
-- Ana envanter ve oyuna/moda özel envanter sağlayıcıları. Desteklenen sağlayıcının verisi görüntülenip düzenlenir.
-- Modrinth ve CurseForge kataloglarında sürüm/yükleyici filtresi; tek tıkla mod ve zorunlu bağımlılıklarını kurma. CurseForge için resmi API anahtarı gerekir; yazarın indirme kısıtları korunur.
-- İşlemi yapan panel kullanıcısıyla birlikte kayıt; varsayılan 90 gün saklama; kullanıcının son üç geri alınabilir işlemini en sondan başlayarak geri alma.
-- Minecraft Paper/Fabric/NeoForge/Vanilla için otomatik kurulum planı ve SSH üzerinden kurulum, manuel kurulum yönlendirmesi ve işlem günlükleri.
+Geliştirme: ayrı terminallerde `npm run dev` ve `npm run dev:web`. Vite, `http://127.0.0.1:5173` üzerindeki `/api` isteklerini 3001 portuna iletir.
 
-## Hazır kurulu sunucuyu bağlama
+## Yönetim
 
-Sunucu eklerken önce **Hazır kurulu sunucum var** seçin. SSH bağlantısını ve bağımsız olarak doğrulanmış SHA256 parmak izini girdikten sonra tek seferlik salt okunur tarama çalışır. Sunucu ana dizinin dışında bulunuyorsa mutlak oyun dizinini yazın; birden fazla kurulum varsa doğru dizini seçin.
+- Birden fazla mevcut sunucu bağlantısı; SSH parmak izi doğrulaması; şifrelenmiş bağlantı bilgileri.
+- Minecraft Paper/Fabric/Forge/NeoForge gibi mevcut kurulumların algılanması. RAM, JVM bellek sınırı, disk, açık/kapalı durum, çevrimiçi ve toplam benzersiz oyuncu, diskteki modlar için tek seferlik salt okunur keşif. Doğrulanamayan bilgi sıfır yerine bilinmiyor olarak kalır.
+- Oyuncu adı, ping, UUID kopyalama, toplam oyun süresi, yeşil/gri durum noktaları; arama, filtre, sıralama ve sayfalama. Yetkiye göre yasaklama, rol ve envanter yönetimi.
+- Genel sohbet, tek oyuncu, iki kişi arasındaki fısıltılar ve komut filtreleri.
+- Oyuna ve moda uygun envanter sağlayıcılarıyla ana envanter, ender sandığı ve ek depolar. Sağlayıcısı olmayan çanta modu otomatik desteklenmez.
+- Modrinth ve CurseForge katalogları; oyun sürümü/yükleyici kontrolüyle tek tıkla mod ve zorunlu bağımlılıklarını kurma. Mod listesi kendi alanında kayar. CurseForge resmi API anahtarı gerektirir ve yazarın indirme izinleri korunur.
+- İşlemi yapan panel kullanıcısı, zaman, işlem türü ve durumla kayıt. Varsayılan saklama 90 gün; son üç geri alınabilir işlemi en yeniden başlayarak geri alma. Başka bir değişiklik varsa geri alma durur.
+- Mat siyah, metalik gri ve kod yeşili arayüz; SSP için çizilmiş SVG simgeleri. Akan ikili kod arka planı, akışı durduran kalıcı stabilite tercihi.
+- İlk açılışta tarayıcı/sistem dilinden Türkçe, İngilizce, Almanca veya Fransızca seçimi. Dil tercihi tarayıcıda saklanır; desteklenmeyen dilde İngilizce kullanılır. Sunucu günlükleri ve kullanıcı mesajları özgün dilinde kalır.
 
-Tarama fiziksel RAM'i, ayrılmış JVM RAM'ini, disk kullanımını, açık/kapalı durumunu, çevrimiçi oyuncu sayısını, bilinen toplam oyuncu sayısını ve diskteki JAR modlarını ayrı alanlarda gösterir. İzinler veya Minecraft durum sorgusu yüzünden okunamayan bilgi **bilinmiyor** olarak kalır. Oyuncu toplamı dünya geçmişinden, bu yoksa etiketlenmiş önbellek kaynağından hesaplanır. Anlık yüklü modlar ile diskteki mod listesi aynı şey değildir.
+## Erişim kodları ve özel ayar
 
-Mevcut sunucu doğrudan panele eklenir; yeni oyun sürümü, kurulum yöntemi veya EULA kurulum ekranı açılmaz ve hiçbir oyun dosyası yeniden kurulmaz. Sonraki değişiklikler için SSH taramasını panelden yenileyebilirsiniz. Oyuncu sohbeti/canlı envanter gibi ayrıntılar yine oyuna uygun sağlayıcı gerektirir.
+**Ayarlar → Erişim kodları** içinden İzleyici, Operatör, Yönetici veya **Özel ayar** seçilir. Özel ayar, görünür sekmeleri ve her sekmede yapılabilecek işlemleri ayrı belirler. Örneğin oyuncuları görüntüleme ve rol değiştirme verilirken yasaklama veya envanter düzenleme kapalı tutulabilir.
 
-[Mod sağlayıcıları ve tek tıkla kurulum](docs/MODS.md) · [SSH ve keşif ayrıntıları](docs/SSH.md)
+| Profil | Varsayılan kapsam |
+| --- | --- |
+| İzleyici | Ayarlar dışındaki sekmeleri ve verileri görüntüler |
+| Operatör | Görüntüleme, güç işlemleri, SSH taraması, moderasyon, sohbet, envanter, geri alma |
+| Yönetici / Sahip | Tüm sekmeler ve işlemler |
+| Özel ayar | Yalnızca seçili sekme ve işlemler |
 
-## Gerçek sunucu bağlantısı ve kapsam
+Yetkiler API tarafında uygulanır; yetkisiz veriler anlık görüntüden çıkarılır. Erişim yöneticisi kendi kapsamından fazlasını paylaşamaz. Kod ilk kullanımda bir hesaba bağlanır, yedi gün geçerlidir ve bu süre boyunca aynı hesapla tekrar girişte kullanılabilir. İptal, kodla verilmiş sunucu üyeliğini de hemen kaldırır. Sunucu sahibi rolü kodla verilemez.
 
-SSH, işletim sistemi bağlantısı ve kurulum içindir. Oyuncu pingleri, sohbet ve canlı envanter gibi oyun içi veriler ayrıca oyun köprüsü gerektirir. Bu depoda Paper için gerçek bir Java eklentisi ve genişletilebilir envanter sağlayıcı sözleşmesi bulunur; [köprü kurulumu](docs/BRIDGE.md) ve [SSH kurulumu](docs/SSH.md) belgelerine bakın.
+## Oyun bağlantısının kapsamı
 
-Fabric/Forge/NeoForge çanta modlarının kendi NBT/bileşen yapıları vardır. Her çanta modu otomatik olarak desteklenmez; modun bir envanter sağlayıcısına bağlanması gerekir. Sağlayıcı yoksa panel desteklenmeyen işlemi hata olarak gösterir. Paper eklentisi Fabric/Forge/NeoForge üzerinde çalışmaz. Valheim, Terraria ve Rust için seçim/manuel plan akışı bulunur; bu sürümde hazır canlı oyun köprüleri yoktur.
+SSH keşfi mevcut oyun dosyalarını yeniden oluşturmaz ve oyun başlatmaz. Oyun içi oyuncu, sohbet ve envanter ayrıntıları uygun oyun sağlayıcısı gerektirir. Depoda Paper 1.21.4 için Java 21 eklentisi ve Python süreç köprüsü bulunur. Paper eklentisi Fabric/Forge/NeoForge üzerinde çalışmaz; bunlar için uyumlu sağlayıcı gerekir. Valheim, Terraria ve Rust için genel bağlantı/keşif altyapısı vardır; hazır oyun içi köprüler bulunmaz.
 
-Geri alma, kaydedilmiş ters işlemi bulunan işlemler içindir. Ham konsol komutu, gönderilmiş sohbet mesajı veya otomatik kurulum geri alınamaz. Dünya/veri yedeğinin yerini almaz. İşlem geçmişi saklama ayarı panel kayıtlarını yönetir; Minecraft'ın kendi log dosyalarını silmez.
+Güç ve ham konsol işlemleri için mevcut sunucunun süreç yönetimi köprüye bağlanmalıdır. Başka bir servis tarafından çalıştırılan sunucu için başarı taklidi yapılmaz. Ham komutlar, gönderilmiş sohbet ve mod dosyası işlemleri geri alınamaz; geri alma dünya yedeğinin yerini almaz.
 
-## Docker
+[SSH ve keşif](docs/SSH.md) · [Oyun köprüsü](docs/BRIDGE.md) · [Mod katalogları](docs/MODS.md) · [Doğrulama](docs/TESTING.md)
+
+## Dağıtım ve veri
 
 ```sh
 docker compose up -d --build
 ```
 
-Docker derlemesi Paper köprüsü JAR dosyasını da hazırlar. Yerel npm kurulumunda oyuncu/sohbet/envanter köprüsü için ayrıca Maven komutunu çalıştırın veya GitHub Actions çıktısından JAR dosyasını alın. Otomatik kurulum SSH üzerinden süreç köprüsünü aktarır; oyun dünyası panelde Başlat seçilince açılır. Kalıcı veri `ssp-data` volume'ünde tutulur. Varsayılan port yalnızca `127.0.0.1:3001` adresine bağlıdır. Dış erişim için HTTPS reverse proxy ekleyip `SSP_SECURE_COOKIE=true` ayarlayın.
+Docker derlemesi Paper eklentisini de hazırlar. Eklenti mevcut oyun sunucusuna [köprü belgesine](docs/BRIDGE.md) göre yüklenir. Kalıcı panel verisi `ssp-data` volume'ündedir. Varsayılan dinleme adresi `127.0.0.1:3001`; dış erişimde HTTPS reverse proxy ve `SSP_SECURE_COOKIE=true` kullanın. `.env.example` içindeki değişkenleri süreç ortamında sağlayın; `.env` kendiliğinden okunmaz.
 
-Ortam değişkenleri `.env.example` dosyasında gösterilir. Değişkenleri işletim sistemi, Docker veya süreç yöneticisi üzerinden sağlayın; `.env` dosyası otomatik okunmaz.
+SQLite, oturumlar ve anahtar `data/` içindedir ve Git'e dahil edilmez. Parolalar scrypt, uzak erişim bilgileri AES-256-GCM ile korunur. Oturum ve erişim kodları özet olarak saklanır. `data/ssp.sqlite` ile `data/master.key` birlikte yedeklenmelidir. Ayrıntılar [SECURITY.md](SECURITY.md) içindedir.
 
-Viewer yalnızca görüntüler. Operator güç işlemlerini, sohbeti, oyuncu moderasyonunu ve envanteri yönetir. Admin/owner ayrıca konsolu, modları, yetkileri, davetleri ve ayarları yönetir. Kullanıcının kendi sunucusundaki erişimi diğer sunuculara aktarılmaz.
-
-## Veri ve güvenlik
-
-SQLite veritabanı, oturumlar ve anahtar `data/` altında saklanır; bu klasör Git'e dahil edilmez. Parolalar scrypt ile özetlenir; SSH bilgileri, köprü tokenları ve panelden girilen CurseForge anahtarları AES-256-GCM ile şifrelenir. Davet ve oturum tokenları veritabanında özet olarak tutulur. Yetki ve CSRF kontrolleri API'de uygulanır.
-
-`data/ssp.sqlite` ve `data/master.key` birlikte yedeklenmelidir. Anahtar kaybolursa kayıtlı SSH bilgileri çözülemez. Ayrıntılar: [SECURITY.md](SECURITY.md).
-
-## Doğrulama ve katkı
+## Kontroller
 
 ```sh
 npm test
@@ -77,9 +80,6 @@ npm audit
 mvn -B -f bridge/paper/pom.xml package
 ```
 
-GitHub Actions panel testlerini, TypeScript/üretim derlemesini ve Paper köprüsü derlemesini çalıştırır. Canlı bir uzak sunucu sağlanmadan gerçek SSH kurulumu ve oyun davranışı uçtan uca doğrulanamaz.
+GitHub Actions panel kontrollerini ve Paper eklenti derlemesini çalıştırır. Canlı uzak sunucu sağlanmadan gerçek oyun dünyasında uçtan uca davranış doğrulanamaz.
 
 [Katkı rehberi](CONTRIBUTING.md) · [MIT lisansı](LICENSE)
-
-
-

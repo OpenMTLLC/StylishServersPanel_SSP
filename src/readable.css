@@ -16,17 +16,13 @@
 .nav-count { font-size: 12px; min-width: 24px; line-height: 1.3; }
 .nav-active-line { left: -19px; }
 .sidebar-bottom { padding-top: 35px; }
-.open-source { padding: 17px 12px; }
-.open-source > span { font-size: 12px; white-space: normal; letter-spacing: 0; line-height: 1.8; }
-.open-source p { font-size: 21px; line-height: 1.5; }
-.open-source a { font-size: 13px; }
 .account { margin: 0 -18px; padding: 19px 18px; gap: 11px; }
 .account strong { font-size: 14px; }
 .account div > span { font-size: 12px; }
 .account .avatar { width: 37px; height: 37px; font-size: 12px; }
 .topbar { min-height: 76px; padding: 14px 32px; gap: 15px; }
 .breadcrumbs { font-size: 13px; gap: 10px; flex-wrap: wrap; }
-.connection-label, .version { font-size: 12px; }
+.version { font-size: 12px; }
 main { max-width: 1700px; padding: 34px 32px 0; }
 .page-title-row { gap: 22px; flex-wrap: wrap; margin-bottom: 27px; }
 .eyebrow, .page-title-row .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: 1.1px; }
@@ -44,9 +40,6 @@ main { max-width: 1700px; padding: 34px 32px 0; }
 .tag, .mini-tag { font-size: 12px; line-height: 1.4; padding: 4px 7px; }
 .status { font-size: 13px; gap: 8px; }
 .status-dot { height: 7px; width: 7px; }
-.demo-banner { padding: 15px 18px; gap: 17px; flex-wrap: wrap; }
-.demo-banner > span:first-child, .demo-mode { font-size: 12px; line-height: 1.8; }
-.demo-banner p { font-size: 13px; line-height: 1.8; }
 .server-overview-bar { padding: 20px; gap: 18px; flex-wrap: wrap; }
 .server-identity { gap: 15px; }
 .server-identity h2 { font-size: 19px; gap: 12px; line-height: 1.6; flex-wrap: wrap; }
@@ -73,7 +66,6 @@ main { max-width: 1700px; padding: 34px 32px 0; }
 .panel-heading > div { gap: 11px; flex-wrap: wrap; }
 .panel-heading h3 { font-size: 17px; line-height: 1.6; white-space: normal; }
 .panel-icon > svg, .panel-heading > div > svg { width: 20px; height: 20px; }
-.live-label, .dashboard-console .panel-heading .live-label { font-size: 12px; letter-spacing: .4px; line-height: 1.5; padding: 4px 6px; }
 .count-pill { font-size: 12px; min-height: 23px; min-width: 24px; padding: 2px 6px; }
 .console-lines { height: 320px; padding: 20px; font-size: 13px; line-height: 1.9; }
 .console-line, .full-console .console-line { grid-template-columns: 67px 49px minmax(0,1fr); gap: 12px; font-size: 13px; min-height: 31px; line-height: 1.8; }
@@ -137,7 +129,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
 .filter-tabs > button, .chat-toolbar > .filter-tabs > button { font-size: 14px; min-height: 43px; padding: 10px 12px; gap: 8px; }
 .filter-tabs .count-pill { font-size: 12px; }
 .chat-toolbar { padding: 20px; gap: 16px; flex-wrap: wrap; }
-.chat-toolbar > .live-label { font-size: 12px; }
 .chat-filters { padding: 18px 20px; gap: 13px; flex-wrap: wrap; }
 .chat-filters > .form-select { font-size: 14px; }
 .chat-feed { height: 520px; padding: 27px 23px; }
@@ -277,18 +268,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
 .welcome-panel h2 { font-size: 32px; }
 .welcome-panel > p { font-size: 16px; line-height: 1.9; max-width: 600px; }
 .welcome-panel .button { font-size: 15px; min-height: 45px; }
-.auth-story { padding: 40px 48px 28px; }
-.auth-story-content > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .8px; }
-.auth-story h1 { font-size: clamp(46px,4.5vw,70px); line-height: 1.17; letter-spacing: -2px; }
-.auth-story-content > p { font-size: 16px; line-height: 1.9; }
-.auth-server-card { width: 100%; max-width: 500px; transform: none; }
-.auth-server-card-top { padding: 19px; }
-.auth-server-card-top > span:first-child { font-size: 16px; }
-.auth-server-card-top > .status { font-size: 12px; }
-.auth-terminal { font-size: 13px; padding: 24px 19px; line-height: 1.9; white-space: normal; gap: 17px; }
-.auth-terminal i { font-size: 12px; width: 27px; }
-.auth-card-bottom { font-size: 12px; line-height: 1.8; flex-wrap: wrap; padding: 17px 19px; gap: 14px; }
-.auth-story-footer, .auth-story-footer > span:last-child { font-size: 12px; }
 .auth-form-side { padding: 48px 38px 28px; }
 .auth-form-wrap { max-width: 450px; }
 .auth-form-wrap > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .6px; }
@@ -300,9 +279,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
 .auth-form-wrap .input-icon input { font-size: 16px; min-height: 48px; line-height: 1.5; padding: 12px 0; }
 .auth-form-wrap .auth-submit { font-size: 16px; min-height: 49px; }
 .connection-choice > button { font-size: 14px; min-height: 47px; padding: 12px 9px; gap: 8px; }
-.auth-or { font-size: 12px; margin: 28px 0 23px; }
-.demo-button { font-size: 16px; min-height: 48px; }
-.auth-note { font-size: 12px; line-height: 1.9; align-items: flex-start; gap: 9px; }
 .auth-form-footer { font-size: 12px; }
 .discovery-source { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; background: #1e231d; border: 1px solid #46523b; border-radius: 7px; padding: 20px 22px; margin-bottom: 23px; }
 .discovery-source > div { flex: 1; min-width: 210px; }
@@ -334,11 +310,10 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
  .page-actions { width: 100%; justify-content: flex-end; }
  .settings-grid { grid-template-columns: 1fr; }
  .access-settings { grid-column: auto; }
- .topbar-right .connection-label { display: none; }
  .mods-hero { flex-wrap: wrap; }
  .mod-search { max-width: none; min-width: 240px; }
  .server-bar-right { margin-left: auto; }
- .auth-story, .auth-form-side { padding-left: 30px; padding-right: 30px; }
+ .auth-form-side { padding-left: 30px; padding-right: 30px; }
  .auth-form-wrap > h2 { font-size: 30px; }
 }
 @media (max-width:1000px) {
@@ -353,8 +328,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
  .details-content, .compact-player-list { display: block; }
  .compact-player:nth-last-child(2) { border-bottom: 1px solid #343d2d; }
  .undo-info > .switch-label { margin-left: 0; justify-content: flex-end; width: 100%; }
- .auth-story h1 { font-size: 45px; }
- .auth-server-card-top { flex-wrap: wrap; gap: 9px; }
  .connection-choice { flex-wrap: wrap; }
  .connection-choice > button { flex-basis: 100%; }
 }
@@ -367,9 +340,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
  .sidebar .workspace-label, .sidebar .nav-label, .sidebar .workspace-label > span { font-size: 12px; }
  .sidebar .workspace-card strong { font-size: 15px; }
  .sidebar .workspace-card div > span { font-size: 12px; }
- .sidebar .open-source > span { font-size: 12px; white-space: normal; }
- .sidebar .open-source p { font-size: 21px; }
- .sidebar .open-source a { font-size: 13px; }
  .sidebar .account { margin-left: -18px; margin-right: -18px; padding-left: 18px; padding-right: 18px; }
  .sidebar .account strong { font-size: 14px; }
  .sidebar .account div > span { font-size: 12px; }
@@ -399,12 +369,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
  .wizard-steps > div { font-size: 13px; gap: 8px; }
  .wizard-steps > div > span { width: 29px; height: 29px; }
  .bridge-form > div:first-child { flex-wrap: wrap; }
- .auth-story { padding: 30px 27px 0; }
- .auth-story-content { display: block; padding: 35px 0; }
- .auth-story-content > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .4px; white-space: normal; }
- .auth-story h1 { font-size: 47px; line-height: 1.17; letter-spacing: -1.7px; }
- .auth-story-content > p { display: block; font-size: 16px; line-height: 1.9; margin-top: 21px; }
- .auth-server-card { display: none; }
  .auth-form-side { padding: 37px 27px 28px; }
  .auth-form-wrap { max-width: 500px; }
  .auth-form-wrap > .eyebrow { font-size: 12px; line-height: 1.8; letter-spacing: .5px; }
@@ -413,7 +377,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
  .auth-form-wrap label { font-size: 14px; }
  .auth-form-wrap .input-icon input { font-size: 16px; min-height: 49px; }
  .auth-form-wrap .auth-submit { font-size: 16px; min-height: 49px; }
- .auth-note { font-size: 12px; }
 }
 @media (max-width:480px) {
  main { padding: 25px 16px 0; }
@@ -479,8 +442,6 @@ td { font-size: 14px; line-height: 1.8; padding: 20px; }
  .inventory-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
  .inventory-slot { min-height: 73px; }
  .slot-editor { grid-template-columns: 1fr; }
- .auth-story h1 { font-size: 44px; line-height: 1.18; white-space: normal; }
- .auth-story-content > p { font-size: 15px; }
  .auth-form-wrap > h2 { font-size: 30px; }
  .connection-choice > button { flex-basis: 100%; font-size: 14px; }
  .toast { max-width: calc(100vw - 24px); padding: 16px; }

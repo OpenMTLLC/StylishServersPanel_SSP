@@ -106,6 +106,7 @@ def state():
     result.setdefault("players", [])
     result.setdefault("chat", [])
     result.setdefault("inventoryProviders", [])
+    result["server"] = {**result.get("server", {}), "game": os.environ.get("SSP_GAME", "minecraft"), "edition": LOADER, "version": VERSION, "status": result["status"]}
     result["mods"] = installed_mods()
     with LOG_LOCK:
         result["console"] = list(LOGS)

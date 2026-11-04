@@ -1,14 +1,16 @@
 # Doğrulama
 
-SSP v0.2.0 Node.js 24 ve Python 3.11 ile doğrulandı. Paper eklentisi önceki sürümde Java 21 hedefiyle derlendi; eklenti kaynakları bu sürümde değişmedi.
+SSP v0.3.0, Node.js 24 ve Python 3.11 ile doğrulandı. Paper eklentisinin Java 21 kaynakları bu sürümde değişmedi.
 
-- `npm test`: 32 test. Oturum/yetkiler, CSRF, davetler, geri alma, özel eşya verisi, katalog sağlayıcıları, CurseForge anahtarları ve indirme izinleri, NeoForge sürüm/özet doğrulaması, hazır sunucu içe aktarımının kurulum planını atlaması, SSH üzerinden stdin veri aktarımı.
-- `python -m unittest discover -s tests -p '*_test.py' -v`: 26 test. Keşfin oyun dosyalarını değiştirmemesi, Minecraft durum protokolü, oyuncu geçmişi, mod ve zorunlu bağımlılıklarının tek işlemde hazırlanması, dosya özetleri, hata halinde yeni dosyaları geri alma, mevcut modun ikinci kopyasını engelleme, süreç ve dosya güvenliği. Sembolik bağlantı testi Windows izin farkı nedeniyle yerelde atlanır; Linux GitHub Actions üzerinde çalışır.
-- `npm run build`: TypeScript kontrolü, Vite üretim arayüzü ve Node sunucusu derlemesi.
-- `mvn -B -f bridge/paper/pom.xml package`: Paper API 1.21.4 için Java 21 hedefli eklenti.
+- `npm test`: 34 test. Zorunlu uzak bağlantı, davetsiz kendi hesabı oluşturma, kodla giriş, tekrar bağlantı doğrulama, ilk keşfin önbelleği, özel sekme/işlem izinleri, veri gizleme, yetki yükseltmesini engelleme, anında erişim iptali, CSRF, parola boşlukları, geri alma ve çakışma denetimi, özel eşya verisi ve şifreleme. Katalog, NeoForge özet ve SSH protokol testleri de çalışır.
+- `python -m unittest discover -s tests -p '*_test.py' -v`: 26 test. Salt okunur keşif, Minecraft durum protokolü, oyuncu geçmişi, atomik mod/bağımlılık indirmesi, özet denetimi, dosya ve süreç güvenliği. Bir sembolik bağlantı testi Windows izin farkı nedeniyle yerelde atlanır; Linux CI üzerinde çalışır.
+- `npm run build`: TypeScript, Vite arayüzü ve Node sunucusu derlemesi.
+- `mvn -B -f bridge/paper/pom.xml package`: Paper 1.21.4 API'si, Java 21 hedefi. GitHub Actions üzerinde ayrıca derlenir.
 
-Gerçek Modrinth API'sinden Fabric, NeoForge ve Paper katalogları sorgulandı. Ayrı bir test dizinine gerçek Waystones, Fabric API ve Balm dosyaları tek kurulum çağrısıyla indirilip resmi özetleri doğrulandı; oyun başlatılmadı. NeoForge 1.21.1 için resmi Maven metadata ve SHA512 dosyası sorgulanarak uyumlu dağıtım çözüldü; gerçek uzak kurulum çalıştırılmadı. CurseForge canlı API anahtarı sağlanmadığı için sağlayıcının başlık, sürüm/yükleyici filtresi, izin ve dosya kuralları kontrollü API yanıtlarıyla test edildi.
+Arayüz Edge/Chromium üzerinde 390, 768 ve 1440 piksel genişlikte kontrol edildi. Türkçe, İngilizce, Almanca ve Fransızca ilk dil algılama; tercihlerin yenilemede korunması; stabilite modunda animasyonun durması; kendi sunucum/kod modlarının ayrılması; oyuncu ve işlem tabloları; özel yetki seçimleri; mod listesinin sayfadan bağımsız kayması doğrulandı. JavaScript sayfa hatası görülmedi.
 
-Masaüstü (1440 px) ve mobil (390 px) arayüz Edge/Chromium ile kontrol edildi. Ana metin 16 px, menü metni 15 px olarak ölçüldü; CurseForge eksik anahtar durumu, NeoForge seçimi ve mevcut sunucuda kurulum ekranını atlama akışı geçti. Sayfa taşması ve JavaScript hatası görülmedi. Hazır sunucu sihirbazında SSH keşfi ve içe aktarım ekranı kontrollü yanıtlarla doğrulanır; bu, canlı bir oyun sunucusunda test yapıldığı anlamına gelmez. SSH aktarımı ayrıca yerel gerçek SSH protokol test sunucusuyla denetlenir.
+Arayüz kontrolleri geçici bir veri dizini ve enjekte edilmiş test uzak bağlantılarıyla yapılır. Test yanıtları `tests/fixtures.ts` içindedir; üretim uygulamasında örnek giriş veya örnek veri API'si bulunmaz. README görüntüsü boş giriş formudur.
 
-Canlı uzak sunucu veya oyun dünyası sağlanmadı. Docker daemon yerelde bulunmadığından imaj derlemesi çalıştırılmadı. Fabric/Forge/NeoForge sohbet ve canlı envanter için uygun oyun sağlayıcısı gerekir; destek matrisi [BRIDGE.md](BRIDGE.md) içindedir.
+Önceki sürümde gerçek Modrinth API'sinden Fabric/NeoForge/Paper kataloğu ve ayrı test dizinine Waystones, Fabric API, Balm indirme/özetleri doğrulandı. Bu sürüm katalog protokolünü değiştirmez. Gerçek CurseForge API anahtarı ve canlı uzak oyun dünyası sağlanmadı; bunlar için kontrollü yanıtlar kullanıldı. Gerçek SSH aktarımı yerel SSH protokol test sunucusunda denetlenir. Docker daemon bulunmadığından yerel imaj derlemesi çalıştırılmadı.
+
+Fabric/Forge/NeoForge oyun içi sohbet ve envanter için uygun oyun sağlayıcısı gerekir; [destek kapsamı](BRIDGE.md) geçerlidir.
